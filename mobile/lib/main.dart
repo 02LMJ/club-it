@@ -1,121 +1,292 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const ClubItApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ClubItApp extends StatelessWidget {
+  const ClubItApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Club-it',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C63FF),
+        ),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const ClubHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class ClubHomePage extends StatefulWidget {
+  const ClubHomePage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ClubHomePage> createState() => _ClubHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _ClubHomePageState extends State<ClubHomePage> {
+  final TextEditingController _searchController = TextEditingController();
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  final List<Map<String, dynamic>> _clubs = [
+    {
+      'name': 'CATS',
+      'category': '학술',
+      'description': '코딩 스터디 동아리입니다.',
+      'favorite': true,
+    },
+    {
+      'name': 'COSMIC',
+      'category': '문화',
+      'description': '천문 관측 동아리입니다.',
+      'favorite': false,
+    },
+    {f
+      'name': 'IPSE',
+      'category': '봉사',
+      'description': '봉사 활동 동아리입니다.',
+      'favorite': false,
+    },
+  ];
+
+  String _searchText = '';
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+    final filteredClubs = _clubs.where((club) {
+      final name = club['name'].toString().toLowerCase();
+      final category = club['category'].toString().toLowerCase();
+      final keyword = _searchText.toLowerCase();
+
+      return name.contains(keyword) || category.contains(keyword);
+    }).toList();
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF7F7F9),
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        backgroundColor: Colors.white,
+        surfaceTintColor: Colors.white,
+        title: const Text(
+          'Club-it',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
+        actions: [
+          IconButton(
+            onPressed: () {},
+            icon: const Icon(Icons.notifications_none),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '동아리 검색',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _searchText = value;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: '동아리 이름 또는 카테고리 검색',
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '동아리 목록',
+                    style: TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    '전체보기',
+                    style: TextStyle(
+                      color: Color(0xFF6C63FF),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 14),
+
+              Expanded(
+                child: filteredClubs.isEmpty
+                    ? const Center(
+                        child: Text('검색 결과가 없습니다.'),
+                      )
+                    : ListView.separated(
+                        itemCount: filteredClubs.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final club = filteredClubs[index];
+
+                          return ClubCard(
+                            name: club['name'],
+                            category: club['category'],
+                            description: club['description'],
+                            favorite: club['favorite'],
+                            onFavoritePressed: () {
+                              setState(() {
+                                club['favorite'] = !club['favorite'];
+                              });
+                            },
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 0,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: '홈',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border),
+            selectedIcon: Icon(Icons.favorite),
+            label: '즐겨찾기',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: '마이페이지',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ClubCard extends StatelessWidget {
+  final String name;
+  final String category;
+  final String description;
+  final bool favorite;
+  final VoidCallback onFavoritePressed;
+
+  const ClubCard({
+    super.key,
+    required this.name,
+    required this.category,
+    required this.description,
+    required this.favorite,
+    required this.onFavoritePressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: const Color(0xFFECEBFF),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.groups,
+                color: Color(0xFF6C63FF),
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  Text(
+                    category,
+                    style: const TextStyle(
+                      color: Color(0xFF6C63FF),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            IconButton(
+              onPressed: onFavoritePressed,
+              icon: Icon(
+                favorite ? Icons.star : Icons.star_border,
+                color: favorite ? Colors.amber : Colors.grey,
+              ),
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
       ),
     );
   }
