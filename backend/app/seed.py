@@ -1,57 +1,46 @@
-"""테스트용 기본 데이터 넣기. 실행: python -m app.seed
+"""테스트 계정 준비. 실행: python -m app.seed  (python -m app.init_db 다음에)
 
-- 시스템관리자 계정: admin@clubit.com / admin1234
-- 동아리 임원 계정: officer@clubit.com / officer1234  (첫 번째 동아리의 임원)
-- 샘플 동아리 3개
-여러 번 실행해도 중복으로 들어가지 않습니다.
+clubit_schema.sql의 더미 계정은 비밀번호가 자리표시 문자열이라 로그인이 안 됩니다.
+이 스크립트가 더미 계정 비밀번호를 전부 test1234 로 설정해서 바로 로그인할 수 있게 합니다.
+
+  관리자  admin@cbnu.ac.kr     (ADMIN)
+  임원    officer1@cbnu.ac.kr  (OFFICER, CATS·COSMIC 임원)
+  임원    officer2@cbnu.ac.kr  (OFFICER, IPSE·CERT 임원)
+  학생    student1~3@cbnu.ac.kr
+  비밀번호: 모두 test1234
+
+DB가 비어 있으면(더미 데이터 없이 테이블만 만든 경우) 위 관리자·임원 계정과 동아리 1개를 직접 만듭니다.
+여러 번 실행해도 괜찮습니다.
 """
 from sqlalchemy import select
 
-from app import models  # noqa: F401
-from app.database import Base, SessionLocal, engine
-from app.models import Club, MemberRole, Membership, MemberStatus, User, UserRole
+from app.database import SessionLocal
+from app.models import Club, Membership, User
 from app.security import hash_password
 
-SAMPLE_CLUBS = [
-    {"name": "코딩하는사람들", "category": "학술", "description": "웹·앱 개발 스터디 동아리", "is_recruiting": True},
-    {"name": "달리기클럽", "category": "운동", "description": "매주 화·목 저녁 러닝", "is_recruiting": True},
-    {"name": "사진동아리 셔터", "category": "문화", "description": "출사와 사진전", "is_recruiting": False},
-]
-
-
-def get_or_create_user(db, email, password, name, student_id, role=UserRole.STUDENT):
-    user = db.scalar(select(User).where(User.email == email))
-    if user is None:
-        user = User(email=email, password_hash=hash_password(password), name=name,
-                    student_id=student_id, role=role)
-        db.add(user)
-        db.flush()
-    return user
+PLACEHOLDER = "CHANGE_ME_BCRYPT_HASH"
+TEST_PASSWORD = "test1234"
 
 
 def main():
-    Base.metadata.create_all(bind=engine)
     db = SessionLocal()
     try:
-        get_or_create_user(db, "admin@clubit.com", "admin1234", "관리자", "0000000000", UserRole.ADMIN)
-        officer = get_or_create_user(db, "officer@clubit.com", "officer1234", "임원", "0000000001")
+        users = db.scalars(select(User).where(User.password == PLACEHOLDER)).all()
+        for u in users:
+            u.password = hash_password(TEST_PASSWORD)
 
-        clubs = []
-        for c in SAMPLE_CLUBS:
-            club = db.scalar(select(Club).where(Club.name == c["name"]))
-            if club is None:
-                club = Club(**c)
-                db.add(club)
-                db.flush()
-            clubs.append(club)
+        if db.scalar(select(User).limit(1)) is None:
+            admin = User(email="admin@cbnu.ac.kr", name="관리자", role="ADMIN", password=hash_password(TEST_PASSWORD))
+            officer = User(email="officer1@cbnu.ac.kr", name="김임원", role="OFFICER",
+                           password=hash_password(TEST_PASSWORD))
+            club = Club(club_name="CATS", category="학술", description="컴퓨터공학 기반 학술 동아리", recruit_status=True)
+            db.add_all([admin, officer, club])
+            db.flush()
+            db.add(Membership(user_id=officer.user_id, club_id=club.club_id, member_role="OFFICER", status="APPROVED"))
+            print("빈 DB라서 기본 계정과 동아리를 만들었습니다.")
 
-        first = clubs[0]
-        if db.scalar(select(Membership).where(Membership.user_id == officer.id,
-                                              Membership.club_id == first.id)) is None:
-            db.add(Membership(user_id=officer.id, club_id=first.id,
-                              role=MemberRole.OFFICER, status=MemberStatus.APPROVED))
         db.commit()
-        print("기본 데이터 준비 완료")
+        print(f"테스트 계정 준비 완료 (비밀번호 설정 {len(users)}명, 비밀번호: {TEST_PASSWORD})")
     finally:
         db.close()
 
