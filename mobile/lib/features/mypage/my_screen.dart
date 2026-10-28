@@ -12,10 +12,19 @@ class MyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+
     return Scaffold(
       appBar: AppBar(title: const Text('마이')),
       body: ListView(
         children: [
+          if (user != null)
+            ListTile(
+              leading: const CircleAvatar(child: Icon(Icons.person)),
+              title: Text(user.name),
+              subtitle: Text(user.email),
+            ),
+          const Divider(),
           const ListTile(
             leading: Icon(Icons.assignment_outlined),
             title: Text('내 가입 신청 현황'),
