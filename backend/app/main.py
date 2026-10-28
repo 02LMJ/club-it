@@ -1,26 +1,24 @@
-"""서버 시작점. uvicorn app.main:app --reload 로 실행합니다."""
+"""서버 시작점. 실행: uvicorn app.main:app --reload --port 8001
+
+테이블은 태수의 SQL(db/clubit_schema.sql)로 만듭니다. 이 서버는 테이블을 만들지 않습니다.
+"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app import models  # noqa: F401  (테이블 정의를 불러와야 create_all이 테이블을 만듭니다)
-from app.database import Base, engine
-from app.routers import auth, clubs
+from app.config import settings
+from app.routers import admin, ai, auth, clubs, favorites, memberships, notifications, posts
 
-# 서버가 켜질 때 테이블이 없으면 자동 생성 (나중에 Alembic으로 교체 예정)
-Base.metadata.create_all(bind=engine)
+app = FastAPI(title="Club-it API", version="0.3.0")
 
-app = FastAPI(title="Club-it API", version="0.1.0")
-
-# Flutter 웹/에뮬레이터에서 접속할 수 있게 허용 (배포 때는 실제 주소만 허용하도록 좁히기)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
-app.include_router(clubs.router)
+for r in (auth, clubs, memberships, posts, favorites, notifications, ai, admin):
+    app.include_router(r.router)
 
 
 @app.get("/", tags=["상태확인"])
