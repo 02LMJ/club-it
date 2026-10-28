@@ -52,6 +52,14 @@ class ClubCreate(BaseModel):
     recruit_status: bool = False
 
 
+class ClubUpdate(BaseModel):
+    """동아리 수정: 보낸 필드만 바뀜 (PATCH)"""
+    club_name: str | None = Field(default=None, min_length=1, max_length=100)
+    description: str | None = None
+    category: str | None = Field(default=None, max_length=50)
+    recruit_status: bool | None = None
+
+
 class ClubOut(ORM):
     club_id: int
     club_name: str
