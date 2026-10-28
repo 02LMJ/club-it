@@ -3,6 +3,9 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/router/route_paths.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_sizes.dart';
+import '../../core/widgets/app_button.dart';
 import '../../core/widgets/placeholder_view.dart';
 import 'club_provider.dart';
 
@@ -33,7 +36,7 @@ class ClubDetailScreen extends StatelessWidget {
             onPressed: () => provider.toggleFavorite(club.id),
             icon: Icon(
               provider.isFavorite(club.id) ? Icons.star : Icons.star_border,
-              color: provider.isFavorite(club.id) ? Colors.amber : null,
+              color: provider.isFavorite(club.id) ? AppColors.favorite : null,
             ),
           ),
         ],
@@ -44,12 +47,12 @@ class ClubDetailScreen extends StatelessWidget {
       ),
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: FilledButton(
+          padding: const EdgeInsets.all(AppSizes.gapL),
+          child: AppButton(
+            label: club.isRecruiting ? '가입 신청' : '모집 기간이 아닙니다',
             onPressed: club.isRecruiting
                 ? () => context.push(RoutePaths.clubApply(club.id))
                 : null,
-            child: Text(club.isRecruiting ? '가입 신청' : '모집 기간이 아닙니다'),
           ),
         ),
       ),

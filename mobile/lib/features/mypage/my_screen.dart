@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/router/route_paths.dart';
 import '../auth/auth_provider.dart';
 
 /// S09 마이 탭 — 구조 확인용 임시 화면
@@ -19,6 +21,12 @@ class MyScreen extends StatelessWidget {
             title: Text('내 가입 신청 현황'),
             subtitle: Text('준비 중'),
           ),
+          ListTile(
+            leading: const Icon(Icons.palette_outlined),
+            title: const Text('디자인 미리보기 (개발용)'),
+            onTap: () => context.push(RoutePaths.designPreview),
+          ),
+          const Divider(),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('로그아웃'),

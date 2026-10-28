@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_sizes.dart';
+import '../../../core/theme/app_text_styles.dart';
+import '../../../core/widgets/app_badge.dart';
+import '../../../core/widgets/app_card.dart';
 import '../../../data/models/club.dart';
 
-/// 동아리 목록 카드 (9/30 기본 UI에서 분리)
-/// TODO(공통 디자인 단계): 색상·글꼴을 테마로 교체, 모집중 뱃지 추가
+/// 동아리 목록 카드 (화면 설계 v2 S03-D4)
+/// 동아리명 + 모집 뱃지 / 카테고리 / 한 줄 소개 / 즐겨찾기 별
 class ClubCard extends StatelessWidget {
   const ClubCard({
     super.key,
@@ -20,66 +25,63 @@ class ClubCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      clipBehavior: Clip.antiAlias,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 54,
-                height: 54,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFECEBFF),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(Icons.groups, color: Color(0xFF6C63FF)),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    return AppCard(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppSizes.radiusM),
+            ),
+            child: const Icon(Icons.groups, color: AppColors.primary),
+          ),
+          const SizedBox(width: AppSizes.gapL),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      club.name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        club.name,
+                        style: AppTextStyles.subtitle,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      club.category,
-                      style: const TextStyle(
-                        color: Color(0xFF6C63FF),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      club.summary,
-                      style: const TextStyle(color: Colors.black54, height: 1.4),
-                    ),
+                    const SizedBox(width: AppSizes.gapS),
+                    AppBadge.recruiting(club.isRecruiting),
                   ],
                 ),
-              ),
-              IconButton(
-                onPressed: onFavoritePressed,
-                icon: Icon(
-                  isFavorite ? Icons.star : Icons.star_border,
-                  color: isFavorite ? Colors.amber : Colors.grey,
+                const SizedBox(height: 4),
+                Text(
+                  club.category,
+                  style: AppTextStyles.caption
+                      .copyWith(color: AppColors.primary),
                 ),
-              ),
-            ],
+                const SizedBox(height: AppSizes.gapS),
+                Text(
+                  club.summary,
+                  style: AppTextStyles.bodySecondary,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
-        ),
+          IconButton(
+            onPressed: onFavoritePressed,
+            tooltip: isFavorite ? '즐겨찾기 해제' : '즐겨찾기',
+            icon: Icon(
+              isFavorite ? Icons.star : Icons.star_border,
+              color: isFavorite ? AppColors.favorite : AppColors.textHint,
+            ),
+          ),
+        ],
       ),
     );
   }

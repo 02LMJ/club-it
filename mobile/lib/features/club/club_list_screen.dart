@@ -3,12 +3,15 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/router/route_paths.dart';
+import '../../core/theme/app_sizes.dart';
+import '../../core/theme/app_text_styles.dart';
+import '../../core/widgets/app_text_field.dart';
 import '../../data/models/club.dart';
 import 'club_provider.dart';
 import 'widgets/club_card.dart';
 
 /// S03 동아리 목록 (홈 탭)
-/// 9/30 기본 UI를 옮기고, 데이터·검색·즐겨찾기 상태를 ClubProvider로 분리
+/// TODO(검색·필터 단계): 카테고리 칩 필터, 모집중만 보기 토글
 class ClubListScreen extends StatefulWidget {
   const ClubListScreen({super.key});
 
@@ -31,46 +34,27 @@ class _ClubListScreenState extends State<ClubListScreen> {
     final clubs = provider.filteredClubs;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F9),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
-        title: const Text(
-          'Club-it',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
-        ),
+        title: const Text('Club-it', style: AppTextStyles.headline),
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSizes.pagePadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '동아리 검색',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              TextField(
+              const Text('동아리 검색', style: AppTextStyles.title),
+              const SizedBox(height: AppSizes.gapL),
+              AppTextField(
                 controller: _searchController,
+                hintText: '동아리 이름 또는 카테고리 검색',
+                prefixIcon: Icons.search,
+                textInputAction: TextInputAction.search,
                 onChanged: provider.updateKeyword,
-                decoration: InputDecoration(
-                  hintText: '동아리 이름 또는 카테고리 검색',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
               ),
-              const SizedBox(height: 28),
-              const Text(
-                '동아리 목록',
-                style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 14),
+              const SizedBox(height: AppSizes.gapXL),
+              const Text('동아리 목록', style: AppTextStyles.title),
+              const SizedBox(height: AppSizes.gapM),
               Expanded(child: _buildList(provider, clubs)),
             ],
           ),
@@ -84,15 +68,20 @@ class _ClubListScreenState extends State<ClubListScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (provider.errorMessage != null) {
-      return Center(child: Text(provider.errorMessage!));
+      return Center(
+        child: Text(provider.errorMessage!, style: AppTextStyles.bodySecondary),
+      );
     }
     if (clubs.isEmpty) {
-      return const Center(child: Text('검색 결과가 없습니다.'));
+      return const Center(
+        child: Text('검색 결과가 없습니다.', style: AppTextStyles.bodySecondary),
+      );
     }
 
     return ListView.separated(
       itemCount: clubs.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 12),
+      separatorBuilder: (context, index) =>
+          const SizedBox(height: AppSizes.gapM),
       itemBuilder: (context, index) {
         final club = clubs[index];
         return ClubCard(

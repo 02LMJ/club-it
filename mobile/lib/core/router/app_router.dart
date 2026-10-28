@@ -6,6 +6,7 @@ import '../../features/auth/signup_screen.dart';
 import '../../features/club/club_apply_screen.dart';
 import '../../features/club/club_detail_screen.dart';
 import '../../features/club/club_list_screen.dart';
+import '../../features/dev/design_preview_screen.dart';
 import '../../features/favorite/favorite_screen.dart';
 import '../../features/mypage/my_screen.dart';
 import '../../features/notification/notification_screen.dart';
@@ -93,6 +94,12 @@ GoRouter createRouter(AuthProvider auth) {
         path: '/posts/:postId',
         builder: (context, state) =>
             PostDetailScreen(postId: _idParam(state, 'postId')),
+      ),
+
+      // 개발용: 공통 디자인 요소 미리보기
+      GoRoute(
+        path: RoutePaths.designPreview,
+        builder: (context, state) => const DesignPreviewScreen(),
       ),
     ],
   );
