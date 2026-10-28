@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/auth_provider.dart';
 
 class ClubItApp extends StatefulWidget {
@@ -32,11 +33,7 @@ class _ClubItAppState extends State<ClubItApp> {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Club-it',
-      // TODO(공통 디자인 단계): core/theme/app_theme.dart로 분리
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6C63FF)),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
       routerConfig: _router,
     );
   }

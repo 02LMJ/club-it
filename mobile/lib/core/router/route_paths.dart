@@ -3,6 +3,7 @@ class RoutePaths {
   RoutePaths._();
 
   // 인증
+  static const welcome = '/welcome';
   static const login = '/login';
   static const signup = '/signup';
 
@@ -16,4 +17,7 @@ class RoutePaths {
   static String clubDetail(int clubId) => '/clubs/$clubId';
   static String clubApply(int clubId) => '/clubs/$clubId/apply';
   static String postDetail(int postId) => '/posts/$postId';
+
+  // 개발용
+  static const designPreview = '/dev/design';
 }

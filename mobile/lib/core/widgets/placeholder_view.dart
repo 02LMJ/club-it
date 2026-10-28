@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
 
-/// 아직 구현하지 않은 화면에 임시로 보여주는 안내
+import '../theme/app_colors.dart';
+import '../theme/app_text_styles.dart';
+
+/// 아직 구현하지 않은 화면 또는 빈 목록에 보여주는 안내
 class PlaceholderView extends StatelessWidget {
-  const PlaceholderView({super.key, required this.title, this.message});
+  const PlaceholderView({
+    super.key,
+    required this.title,
+    this.message,
+    this.icon = Icons.construction,
+  });
 
   final String title;
   final String? message;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -15,18 +24,15 @@ class PlaceholderView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.construction, size: 48, color: Colors.black26),
+            Icon(icon, size: 48, color: AppColors.textHint),
             const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: AppTextStyles.subtitle),
             if (message != null) ...[
               const SizedBox(height: 8),
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.black54),
+                style: AppTextStyles.bodySecondary,
               ),
             ],
           ],
