@@ -50,14 +50,7 @@ pip install -r requirements.txt
 ```
 > "스크립트를 실행할 수 없습니다" → `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` 후 다시 activate
 
-### 2. DB + 테이블
-MySQL에서 DB를 만들고 `db/clubit_schema.sql`을 실행합니다.
-```sql
-CREATE DATABASE clubit DEFAULT CHARACTER SET utf8mb4;
--- 이어서 db/clubit_schema.sql 실행
-```
-
-### 3. `.env`
+### 2. `.env`
 ```powershell
 copy .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"   # JWT_SECRET 값 생성
@@ -65,20 +58,28 @@ notepad .env
 ```
 `DB_PASSWORD`(MySQL root 비밀번호)와 `JWT_SECRET`을 채우고 저장.
 
-### 4. 테스트 데이터 + 서버 실행
+### 3. DB 만들기 (테이블 + 더미 데이터)
 ```powershell
-python -m app.seed
+python -m app.init_db      # db/clubit_schema.sql 실행 (기존 clubit DB는 지워짐!)
+python -m app.seed         # 더미 계정 비밀번호를 test1234로 설정
+```
+
+### 4. 서버 실행
+```powershell
 uvicorn app.main:app --reload --port 8001
 ```
-- 관리자: `admin@clubit.com` / `admin1234`
-- 임원(OFFICER, 코딩하는사람들 임원): `officer@clubit.com` / `officer1234`
-- 샘플 동아리 3개
+테스트 계정 (비밀번호 모두 `test1234`)
+- 관리자: `admin@cbnu.ac.kr`
+- 임원(OFFICER): `officer1@cbnu.ac.kr` (CATS·COSMIC), `officer2@cbnu.ac.kr` (IPSE·CERT)
+- 학생: `student1@cbnu.ac.kr` ~ `student3@cbnu.ac.kr`
 
 브라우저에서 `http://localhost:8001/docs` → 로그인 → 오른쪽 위 **Authorize**에 토큰 붙여넣기 → 각 API **Try it out → Execute**
 
 ---
 
 ## API 목록
+
+화면별로 어떤 API를 부르는지는 [`docs/app-server-flow.md`](../docs/app-server-flow.md) 참고.
 
 로그인이 필요한 API는 헤더에 `Authorization: Bearer <access_token>`
 
@@ -88,8 +89,10 @@ uvicorn app.main:app --reload --port 8001
 | POST | `/auth/login` | 누구나 | 로그인 → `access_token` |
 | GET | `/auth/me` | 로그인 | 내 정보 |
 | GET | `/clubs?q=&category=&recruiting=&skip=&limit=` | 누구나 | 동아리 목록 |
-| GET | `/clubs/{club_id}` | 누구나 | 동아리 상세 |
+| GET | `/clubs/{club_id}` | 누구나 | 동아리 상세 (목록·상세 모두 `member_count`, 토큰 보내면 `is_favorite`·`my_status`·`my_role` 포함) |
 | POST | `/clubs` | OFFICER·관리자 | 동아리 등록 → 등록자 membership(OFFICER, APPROVED) 자동 생성 |
+| PATCH | `/clubs/{club_id}` | 동아리 임원 | 동아리 정보·모집 여부 수정 (보낸 필드만) |
+| DELETE | `/clubs/{club_id}` | 동아리 임원 | 동아리 삭제 (is_deleted=TRUE, 목록에서 숨김) |
 | POST | `/clubs/{club_id}/join` | 로그인 | 가입신청 `{message}` (선택) |
 | POST | `/clubs/{club_id}/join/cancel` | 로그인 | 대기 중 신청 취소 |
 | GET | `/me/memberships?status=` | 로그인 | 내 신청·가입 현황 (동아리명, 거절 사유 포함) |
@@ -149,7 +152,8 @@ backend/
 │  ├─ schemas.py         요청/응답 JSON 형식
 │  ├─ security.py        비밀번호·토큰·권한(임원 판별)
 │  ├─ llm.py             LLM 호출 (mock/anthropic/openai/ollama)
-│  ├─ seed.py            테스트 데이터
+│  ├─ init_db.py         db/clubit_schema.sql 실행 (DB 초기화)
+│  ├─ seed.py            더미 계정 비밀번호 설정
 │  └─ routers/
 │     ├─ auth.py         회원
 │     ├─ clubs.py        동아리 조회·등록 (동아리 관리 = 태수)
@@ -178,15 +182,13 @@ backend/
 | `No module named 'fastapi'` | `(venv)` 꺼짐 → `.\venv\Scripts\activate` |
 | `No module named 'app'` | `backend` 폴더에서 실행 |
 | `Access denied for user 'root'` | `.env`의 `DB_PASSWORD` 확인 |
-| `Unknown database 'clubit'` | DB 생성 안 함 |
-| `Table 'clubit.user' doesn't exist` | `db/clubit_schema.sql` 실행 안 함 |
-| `Unknown column 'post.post_type'` 등 | 예전 SQL로 만든 테이블 → DB 지우고 최신 SQL로 다시 생성 |
+| `Table 'clubit.user' doesn't exist` | `python -m app.init_db` 실행 안 함 |
+| `Unknown column ...` | 예전 테이블 → `python -m app.init_db`로 다시 생성 |
 | `Can't connect to MySQL server` | Windows 서비스에서 MySQL84 시작 |
 | `address already in use` | 이미 켜진 서버를 `Ctrl+C`로 종료 |
 | `/ai/assist` 502 | `.env`의 LLM 설정(키·모델명) 확인 |
 
 ## 다음 단계
-- [ ] (태수) 동아리 수정·삭제(is_deleted)
 - [ ] 이미지 업로드(동아리 로고·게시물 사진) 필요 여부 결정
 - [ ] RAG 기반 동아리 추천 (지도교수 제안)
 - [ ] 배포: Dockerfile → 클라우드 서버 + 클라우드 MySQL → HTTPS, `CORS_ORIGINS` 좁히기

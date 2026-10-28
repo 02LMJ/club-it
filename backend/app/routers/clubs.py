@@ -4,15 +4,44 @@
 등록하면 club 1행 + 등록자의 membership(OFFICER, APPROVED) 1행을 함께 생성.
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import or_, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Club, Membership, User
+from app.models import Club, Favorite, Membership, User
 from app.schemas import ClubCreate, ClubOut, ClubUpdate
-from app.security import get_club_or_404, get_current_user, require_officer
+from app.security import get_club_or_404, get_current_user, get_optional_user, require_officer
 
 router = APIRouter(prefix="/clubs", tags=["동아리"])
+
+
+def _enrich(db: Session, clubs: list[Club], user: User | None) -> list[ClubOut]:
+    """멤버 수, (로그인 시) 즐겨찾기 여부·내 가입 상태를 붙여서 반환"""
+    ids = [c.club_id for c in clubs]
+    if not ids:
+        return []
+    counts = dict(db.execute(
+        select(Membership.club_id, func.count())
+        .where(Membership.club_id.in_(ids), Membership.status == "APPROVED")
+        .group_by(Membership.club_id)
+    ).all())
+    favs: set[int] = set()
+    mine: dict[int, Membership] = {}
+    if user is not None:
+        favs = set(db.scalars(select(Favorite.club_id).where(
+            Favorite.user_id == user.user_id, Favorite.club_id.in_(ids))).all())
+        mine = {m.club_id: m for m in db.scalars(select(Membership).where(
+            Membership.user_id == user.user_id, Membership.club_id.in_(ids))).all()}
+    out = []
+    for c in clubs:
+        m = mine.get(c.club_id)
+        out.append(ClubOut.model_validate(c).model_copy(update={
+            "member_count": counts.get(c.club_id, 0),
+            "is_favorite": c.club_id in favs,
+            "my_status": m.status if m else None,
+            "my_role": m.member_role if m and m.status == "APPROVED" else None,
+        }))
+    return out
 
 
 @router.get("", response_model=list[ClubOut])
@@ -23,6 +52,7 @@ def list_clubs(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
 ):
     stmt = select(Club).where(Club.is_deleted.is_(False))
     if q:
@@ -32,12 +62,13 @@ def list_clubs(
         stmt = stmt.where(Club.category == category)
     if recruiting is not None:
         stmt = stmt.where(Club.recruit_status.is_(recruiting))
-    return db.scalars(stmt.order_by(Club.club_id).offset(skip).limit(limit)).all()
+    clubs = db.scalars(stmt.order_by(Club.club_id).offset(skip).limit(limit)).all()
+    return _enrich(db, list(clubs), user)
 
 
 @router.get("/{club_id}", response_model=ClubOut)
-def get_club(club_id: int, db: Session = Depends(get_db)):
-    return get_club_or_404(db, club_id)
+def get_club(club_id: int, db: Session = Depends(get_db), user: User | None = Depends(get_optional_user)):
+    return _enrich(db, [get_club_or_404(db, club_id)], user)[0]
 
 
 @router.post("", response_model=ClubOut, status_code=status.HTTP_201_CREATED)
@@ -52,7 +83,7 @@ def create_club(data: ClubCreate, db: Session = Depends(get_db), user: User = De
     db.add(Membership(user_id=user.user_id, club_id=club.club_id, member_role="OFFICER", status="APPROVED"))
     db.commit()
     db.refresh(club)
-    return club
+    return _enrich(db, [club], user)[0]
 
 @router.patch("/{club_id}", response_model=ClubOut)
 def update_club(
@@ -75,7 +106,7 @@ def update_club(
         setattr(club, field, value)
     db.commit()
     db.refresh(club)
-    return club
+    return _enrich(db, [club], user)[0]
 
 
 @router.delete("/{club_id}", status_code=status.HTTP_204_NO_CONTENT)
