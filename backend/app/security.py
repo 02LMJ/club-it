@@ -1,18 +1,19 @@
-"""비밀번호 암호화, 로그인 토큰(JWT) 발급·검사, 현재 로그인한 사용자 찾기."""
+"""비밀번호 암호화, 로그인 토큰(JWT), 현재 사용자/권한 확인."""
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
-from app.models import User, UserRole
+from app.models import Club, Membership, User
 
 ALGORITHM = "HS256"
-bearer = HTTPBearer()
+bearer = HTTPBearer(auto_error=False)
 
 
 def hash_password(plain: str) -> str:
@@ -20,7 +21,10 @@ def hash_password(plain: str) -> str:
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return bcrypt.checkpw(plain.encode(), hashed.encode())
+    try:
+        return bcrypt.checkpw(plain.encode(), hashed.encode())
+    except ValueError:
+        return False
 
 
 def create_access_token(user_id: int) -> str:
@@ -29,14 +33,16 @@ def create_access_token(user_id: int) -> str:
 
 
 def get_current_user(
-    cred: HTTPAuthorizationCredentials = Depends(bearer),
+    cred: HTTPAuthorizationCredentials | None = Depends(bearer),
     db: Session = Depends(get_db),
 ) -> User:
+    if cred is None:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "로그인이 필요합니다.")
     try:
         payload = jwt.decode(cred.credentials, settings.JWT_SECRET, algorithms=[ALGORITHM])
         user_id = int(payload["sub"])
     except (jwt.PyJWTError, KeyError, ValueError):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "로그인이 필요하거나 토큰이 만료되었습니다.")
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "토큰이 올바르지 않거나 만료되었습니다.")
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "존재하지 않는 사용자입니다.")
@@ -44,6 +50,33 @@ def get_current_user(
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
-    if user.role != UserRole.ADMIN:
+    if user.role != "ADMIN":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "시스템관리자만 가능합니다.")
     return user
+
+
+# ---------- 공통 조회/권한 도우미 ----------
+def get_club_or_404(db: Session, club_id: int) -> Club:
+    club = db.get(Club, club_id)
+    if club is None or club.is_deleted:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "동아리를 찾을 수 없습니다.")
+    return club
+
+
+def get_membership(db: Session, user_id: int, club_id: int) -> Membership | None:
+    return db.scalar(
+        select(Membership).where(Membership.user_id == user_id, Membership.club_id == club_id)
+    )
+
+
+def is_officer(db: Session, user: User, club_id: int) -> bool:
+    """동아리 임원 판별: member_role='OFFICER' AND status='APPROVED' (관리자는 항상 True)"""
+    if user.role == "ADMIN":
+        return True
+    m = get_membership(db, user.user_id, club_id)
+    return m is not None and m.member_role == "OFFICER" and m.status == "APPROVED"
+
+
+def require_officer(db: Session, user: User, club_id: int) -> None:
+    if not is_officer(db, user, club_id):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "동아리 임원만 가능합니다.")
