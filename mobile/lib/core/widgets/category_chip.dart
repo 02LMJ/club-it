@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_text_styles.dart';
 
-/// 카테고리 선택 칩 (선택되면 보라 배경 + 흰 글자)
+/// 카테고리 선택 칩 (선택되면 차콜 배경 + 흰 글자)
 ///
 /// ```dart
 /// CategoryChip(label: '학술', selected: _category == '학술', onTap: () => ...)
@@ -29,9 +29,10 @@ class CategoryChip extends StatelessWidget {
       showCheckmark: false,
       selectedColor: AppColors.primary,
       backgroundColor: AppColors.surface,
-      labelStyle: AppTextStyles.caption.copyWith(
-        color: selected ? Colors.white : AppColors.textSecondary,
-        fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelStyle: AppTextStyles.label.copyWith(
+        color: selected ? AppColors.surface : AppColors.textPrimary,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
       ),
       side: BorderSide(
         color: selected ? AppColors.primary : AppColors.border,

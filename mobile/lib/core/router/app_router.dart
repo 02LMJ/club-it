@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/auth_provider.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/signup_screen.dart';
+import '../../features/auth/welcome_screen.dart';
 import '../../features/club/club_apply_screen.dart';
 import '../../features/club/club_detail_screen.dart';
 import '../../features/club/club_list_screen.dart';
@@ -16,7 +17,7 @@ import 'route_paths.dart';
 
 /// 앱 전체 화면 이동 규칙.
 ///
-/// /login, /signup            로그인 전 화면
+/// /welcome, /login, /signup  로그인 전 화면
 /// /, /favorites, ...         하단 탭 4개 (MainShell 안에서 열림)
 /// /clubs/:id, /posts/:id     상세 화면 (하단 탭 없이 전체 화면)
 GoRouter createRouter(AuthProvider auth) {
@@ -26,16 +27,21 @@ GoRouter createRouter(AuthProvider auth) {
     refreshListenable: auth,
     redirect: (context, state) {
       final location = state.matchedLocation;
-      final isAuthPage =
-          location == RoutePaths.login || location == RoutePaths.signup;
+      final isAuthPage = location == RoutePaths.welcome ||
+          location == RoutePaths.login ||
+          location == RoutePaths.signup;
 
-      // 로그인 안 했으면 로그인 화면으로
-      if (!auth.isLoggedIn && !isAuthPage) return RoutePaths.login;
+      // 로그인 안 했으면 시작 화면으로
+      if (!auth.isLoggedIn && !isAuthPage) return RoutePaths.welcome;
       // 로그인 했는데 로그인 화면이면 홈으로
       if (auth.isLoggedIn && isAuthPage) return RoutePaths.home;
       return null;
     },
     routes: [
+      GoRoute(
+        path: RoutePaths.welcome,
+        builder: (context, state) => const WelcomeScreen(),
+      ),
       GoRoute(
         path: RoutePaths.login,
         builder: (context, state) => const LoginScreen(),

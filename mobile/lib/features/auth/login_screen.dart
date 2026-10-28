@@ -4,12 +4,12 @@ import 'package:provider/provider.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../core/router/route_paths.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../core/utils/validators.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../core/widgets/club_it_logo.dart';
 import '../../core/widgets/error_banner.dart';
 import 'auth_provider.dart';
 
@@ -66,11 +66,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      appBar: AppBar(),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
@@ -79,21 +79,21 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    const Align(
+                      alignment: Alignment.centerLeft,
+                      child: ClubItSymbol(size: 52),
+                    ),
+                    const SizedBox(height: 24),
                     Text(
-                      'Club-it',
-                      textAlign: TextAlign.center,
-                      style: AppTextStyles.headline.copyWith(
-                        fontSize: 36,
-                        color: AppColors.primary,
-                      ),
+                      '다시 만나서 반가워요',
+                      style: AppTextStyles.headline.copyWith(fontSize: 26),
                     ),
                     const SizedBox(height: AppSizes.gapS),
                     const Text(
-                      'Find Your Club, Build Your Community',
-                      textAlign: TextAlign.center,
+                      '학교 이메일로 로그인해 주세요.',
                       style: AppTextStyles.bodySecondary,
                     ),
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 36),
                     AppTextField(
                       controller: _emailController,
                       label: '이메일',

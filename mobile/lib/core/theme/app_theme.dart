@@ -36,9 +36,9 @@ class AppTheme {
       scaffoldBackgroundColor: AppColors.background,
 
       appBarTheme: const AppBarThemeData(
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
-        surfaceTintColor: AppColors.surface,
+        surfaceTintColor: AppColors.background,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
@@ -64,7 +64,7 @@ class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: AppColors.surface,
           disabledBackgroundColor: AppColors.border,
           disabledForegroundColor: AppColors.textHint,
           minimumSize: const Size(64, AppSizes.buttonHeight),
@@ -75,8 +75,9 @@ class AppTheme {
 
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.primary,
-          side: const BorderSide(color: AppColors.primary),
+          foregroundColor: AppColors.textPrimary,
+          backgroundColor: AppColors.secondaryButton,
+          side: const BorderSide(color: AppColors.secondaryButtonBorder),
           minimumSize: const Size(64, AppSizes.buttonHeight),
           shape: roundedM,
           textStyle: AppTextStyles.label.copyWith(fontSize: 16),
@@ -96,13 +97,33 @@ class AppTheme {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusL),
+          side: const BorderSide(color: AppColors.border),
         ),
       ),
 
-      navigationBarTheme: const NavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primaryLight,
         surfaceTintColor: AppColors.surface,
+        indicatorColor: Colors.transparent,
+        height: 68,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.textPrimary
+                : AppColors.textSecondary,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => AppTextStyles.caption.copyWith(
+            fontSize: 12,
+            color: states.contains(WidgetState.selected)
+                ? AppColors.textPrimary
+                : AppColors.textSecondary,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w500,
+          ),
+        ),
       ),
 
       dividerTheme: const DividerThemeData(

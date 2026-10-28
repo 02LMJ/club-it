@@ -58,6 +58,11 @@ Future<void> pumpApp(WidgetTester tester) async {
   );
   await tester.pump(const Duration(milliseconds: 500));
   await tester.pumpAndSettle();
+
+  // 시작 화면 → 로그인 화면
+  expect(find.text('우리 학교 동아리, 한 곳에서'), findsOneWidget);
+  await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+  await tester.pumpAndSettle();
 }
 
 /// 로그인 화면 입력창: 0번 이메일, 1번 비밀번호
@@ -96,7 +101,30 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await tester.pumpAndSettle();
 
-    expect(find.text('동아리 목록'), findsOneWidget);
+    expect(find.textContaining('어떤 동아리를'), findsOneWidget);
     expect(find.text('CATS'), findsOneWidget);
+  });
+
+  testWidgets('카테고리 칩과 모집 중만 필터가 동작한다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('전체 동아리 6'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, '봉사'));
+    await tester.pumpAndSettle();
+    expect(find.text('봉사 동아리 1'), findsOneWidget);
+    expect(find.text('IPSE'), findsOneWidget);
+    expect(find.text('CATS'), findsNothing);
+
+    await tester.tap(find.widgetWithText(ChoiceChip, '전체'));
+    await tester.tap(find.text('모집 중만'));
+    await tester.pumpAndSettle();
+    expect(find.text('전체 동아리 4'), findsOneWidget); // 모집 마감 2개 숨김
+    expect(find.text('COSMIC'), findsNothing); // 모집 마감 동아리는 숨김
   });
 }

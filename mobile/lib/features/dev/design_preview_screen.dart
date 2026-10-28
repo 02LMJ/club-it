@@ -8,6 +8,7 @@ import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
 import '../../core/widgets/app_text_field.dart';
 import '../../core/widgets/category_chip.dart';
+import '../../core/widgets/club_it_logo.dart';
 
 /// 개발용: 공통 디자인 요소(색상·글꼴·위젯)를 한 화면에서 확인
 /// 마이 탭 > '디자인 미리보기 (개발용)'에서 열 수 있다.
@@ -26,13 +27,14 @@ class _DesignPreviewScreenState extends State<DesignPreviewScreen> {
 
   static const _colors = <String, Color>{
     'primary': AppColors.primary,
-    'primaryLight': AppColors.primaryLight,
+    'accent': AppColors.accent,
     'background': AppColors.background,
+    'startBg': AppColors.startBackground,
+    'surface': AppColors.surface,
+    'tag': AppColors.tagBackground,
     'border': AppColors.border,
     'textPrimary': AppColors.textPrimary,
     'textSecondary': AppColors.textSecondary,
-    'recruiting': AppColors.recruiting,
-    'favorite': AppColors.favorite,
     'error': AppColors.error,
   };
 
@@ -143,10 +145,22 @@ class _DesignPreviewScreenState extends State<DesignPreviewScreen> {
             ],
           ),
 
+          _section('로고'),
+          const Row(
+            children: [
+              ClubItSymbol(size: 56),
+              SizedBox(width: 24),
+              ClubItLogo(height: 28),
+            ],
+          ),
+          const SizedBox(height: AppSizes.gapM),
+          const ClubItWordmark(fontSize: 44),
+
           _section('뱃지'),
           Wrap(
             spacing: 8,
             children: [
+              AppBadge.category('학술'),
               AppBadge.recruiting(true),
               AppBadge.recruiting(false),
               AppBadge.notice(),

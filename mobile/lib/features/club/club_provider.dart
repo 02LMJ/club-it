@@ -14,21 +14,39 @@ class ClubProvider extends ChangeNotifier {
   List<Club> _clubs = [];
   final Set<int> _favoriteIds = {};
   String _keyword = '';
+  String? _selectedCategory; // null이면 '전체'
+  bool _recruitingOnly = false;
   bool _isLoading = false;
   String? _errorMessage;
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   String get keyword => _keyword;
+  String? get selectedCategory => _selectedCategory;
+  bool get recruitingOnly => _recruitingOnly;
 
-  /// 검색어가 적용된 동아리 목록 (동아리명·카테고리·한 줄 소개에서 검색)
+  /// 칩으로 보여줄 카테고리 목록 (불러온 동아리에 있는 것만, 정해진 순서대로)
+  List<String> get categories {
+    const order = ['학술', '봉사', '예술', '체육', '종교', '취미', '기타'];
+    final existing = _clubs.map((c) => c.category).toSet();
+    return [
+      ...order.where(existing.contains),
+      ...existing.where((c) => !order.contains(c)),
+    ];
+  }
+
+  /// 검색어 + 카테고리 + 모집 중 필터가 모두 적용된 동아리 목록
   List<Club> get filteredClubs {
     final keyword = _keyword.trim().toLowerCase();
-    if (keyword.isEmpty) return List.unmodifiable(_clubs);
     return _clubs.where((club) {
+      if (_selectedCategory != null && club.category != _selectedCategory) {
+        return false;
+      }
+      if (_recruitingOnly && !club.isRecruiting) return false;
+      if (keyword.isEmpty) return true;
       return club.name.toLowerCase().contains(keyword) ||
           club.category.toLowerCase().contains(keyword) ||
-          club.summary.toLowerCase().contains(keyword);
+          club.description.toLowerCase().contains(keyword);
     }).toList();
   }
 
@@ -60,6 +78,17 @@ class ClubProvider extends ChangeNotifier {
 
   void updateKeyword(String value) {
     _keyword = value;
+    notifyListeners();
+  }
+
+  /// null을 넘기면 '전체'
+  void selectCategory(String? category) {
+    _selectedCategory = category;
+    notifyListeners();
+  }
+
+  void setRecruitingOnly(bool value) {
+    _recruitingOnly = value;
     notifyListeners();
   }
 

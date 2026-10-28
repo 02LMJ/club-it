@@ -4,8 +4,8 @@ class AppSizes {
 
   // 모서리 둥글기
   static const double radiusS = 8;
-  static const double radiusM = 14;
-  static const double radiusL = 16;
+  static const double radiusM = 16;
+  static const double radiusL = 18;
 
   // 여백
   static const double pagePadding = 20;
@@ -16,5 +16,5 @@ class AppSizes {
   static const double gapXL = 28;
 
   // 높이
-  static const double buttonHeight = 52;
+  static const double buttonHeight = 56;
 }

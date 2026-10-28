@@ -3,6 +3,7 @@ class RoutePaths {
   RoutePaths._();
 
   // 인증
+  static const welcome = '/welcome';
   static const login = '/login';
   static const signup = '/signup';
 
