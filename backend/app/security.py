@@ -49,6 +49,20 @@ def get_current_user(
     return user
 
 
+def get_optional_user(
+    cred: HTTPAuthorizationCredentials | None = Depends(bearer),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """로그인 안 해도 되는 API에서, 토큰이 있으면 사용자 정보를 함께 쓰기 위함 (잘못된 토큰은 무시)"""
+    if cred is None:
+        return None
+    try:
+        payload = jwt.decode(cred.credentials, settings.JWT_SECRET, algorithms=[ALGORITHM])
+        return db.get(User, int(payload["sub"]))
+    except (jwt.PyJWTError, KeyError, ValueError):
+        return None
+
+
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != "ADMIN":
         raise HTTPException(status.HTTP_403_FORBIDDEN, "시스템관리자만 가능합니다.")

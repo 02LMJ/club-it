@@ -67,6 +67,11 @@ class ClubOut(ORM):
     category: str | None
     recruit_status: bool
     created_at: datetime
+    member_count: int = 0  # 승인된 멤버 수 (임원 포함)
+    # 아래 3개는 로그인 토큰을 보냈을 때만 채워짐 (안 보내면 false / null)
+    is_favorite: bool = False
+    my_status: MemberStatus | None = None  # 내 가입 상태: 상세 화면 하단 버튼 결정용
+    my_role: MemberRole | None = None  # OFFICER면 임원 메뉴(신청 관리, 글쓰기) 표시
 
 
 # ---------- 가입신청 / 멤버 ----------
