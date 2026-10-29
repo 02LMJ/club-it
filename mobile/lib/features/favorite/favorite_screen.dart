@@ -6,6 +6,7 @@ import '../../core/router/route_paths.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../club/club_provider.dart';
+import '../club/favorite_action.dart';
 import '../club/widgets/club_card.dart';
 
 /// S07 즐겨찾기 탭
@@ -36,7 +37,7 @@ class FavoriteScreen extends StatelessWidget {
                 return ClubCard(
                   club: club,
                   isFavorite: true,
-                  onFavoritePressed: () => provider.toggleFavorite(club.id),
+                  onFavoritePressed: () => toggleFavoriteWithFeedback(context, club.id),
                   onTap: () => context.push(RoutePaths.clubDetail(club.id)),
                 );
               },

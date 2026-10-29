@@ -127,4 +127,59 @@ void main() {
     expect(find.text('전체 동아리 4'), findsOneWidget); // 모집 마감 2개 숨김
     expect(find.text('COSMIC'), findsNothing); // 모집 마감 동아리는 숨김
   });
+
+  testWidgets('동아리 카드를 누르면 상세 화면(소개·게시판·가입 버튼)이 열린다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('동아리 소개'), findsOneWidget);
+    expect(find.text('게시판 2'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '가입 신청하기'), findsOneWidget);
+
+    await tester.tap(find.text('게시판 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('이번 주 스터디 공지'), findsOneWidget);
+  });
+
+  testWidgets('가입 신청하면 대기 중이 되고, 신청 취소하면 다시 신청할 수 있다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 상세 → 가입 신청 화면
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '가입 신청하기'));
+    await tester.pumpAndSettle();
+    expect(find.text('신청자 정보'), findsOneWidget);
+    expect(find.text('학생1'), findsOneWidget); // 로그인 정보 자동 입력
+
+    // 신청하기 → 확인 창 → 신청
+    await tester.enterText(find.byType(TextFormField), '열심히 하겠습니다!');
+    await tester.tap(find.widgetWithText(FilledButton, '신청하기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '신청'));
+    await tester.pumpAndSettle();
+
+    // 상세 화면으로 돌아와서 대기 중 + 신청 취소 버튼
+    expect(find.textContaining('승인을 기다리고 있어요'), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, '신청 취소'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '신청 취소'));
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(FilledButton, '가입 신청하기'), findsOneWidget);
+  });
 }

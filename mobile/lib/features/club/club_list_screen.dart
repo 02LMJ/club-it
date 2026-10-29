@@ -12,6 +12,7 @@ import '../../core/widgets/club_it_logo.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../../data/models/club.dart';
 import 'club_provider.dart';
+import 'favorite_action.dart';
 import 'widgets/club_card.dart';
 
 /// S03 동아리 목록 (홈 탭) — 차콜·아이보리 시안
@@ -193,7 +194,7 @@ class _ClubListScreenState extends State<ClubListScreen> {
             return ClubCard(
               club: club,
               isFavorite: provider.isFavorite(club.id),
-              onFavoritePressed: () => provider.toggleFavorite(club.id),
+              onFavoritePressed: () => toggleFavoriteWithFeedback(context, club.id),
               onTap: () => context.push(RoutePaths.clubDetail(club.id)),
             );
           },

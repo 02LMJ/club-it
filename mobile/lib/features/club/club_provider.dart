@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/network/api_exception.dart';
 import '../../data/models/club.dart';
+import '../../data/models/post.dart';
 import '../../data/repositories/club_repository.dart';
 
 /// 동아리 목록, 검색어, 즐겨찾기 상태 관리.
@@ -68,7 +70,13 @@ class ClubProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _clubs = await _repository.fetchClubs();
-    } catch (e) {
+      // 서버가 알려준 즐겨찾기 상태로 초기화
+      _favoriteIds
+        ..clear()
+        ..addAll(_clubs.where((c) => c.isFavorite).map((c) => c.id));
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
+    } catch (_) {
       _errorMessage = '동아리 목록을 불러오지 못했습니다.';
     } finally {
       _isLoading = false;
@@ -92,11 +100,73 @@ class ClubProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// TODO(즐겨찾기 구현 단계): 서버 FAVORITE API 호출
-  void toggleFavorite(int clubId) {
-    if (!_favoriteIds.remove(clubId)) {
-      _favoriteIds.add(clubId);
+  /// 상세 화면용: 서버에서 최신 정보를 받아 목록에도 반영 (멤버 수·가입 상태 등)
+  Future<Club> fetchClubDetail(int clubId) async {
+    final club = await _repository.fetchClub(clubId);
+    final index = _clubs.indexWhere((c) => c.id == clubId);
+    if (index != -1) {
+      final updated = [..._clubs];
+      updated[index] = club;
+      _clubs = updated;
     }
+    club.isFavorite ? _favoriteIds.add(clubId) : _favoriteIds.remove(clubId);
+    notifyListeners();
+    return club;
+  }
+
+  Future<List<Post>> fetchPosts(int clubId) => _repository.fetchPosts(clubId);
+
+  /// 가입 신청 후 최신 상태(PENDING)로 다시 조회. 실패하면 [ApiException]
+  Future<Club> applyJoin(int clubId, {String? message}) async {
+    final trimmed = message?.trim();
+    await _repository.applyJoin(
+      clubId,
+      message: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+    );
+    return fetchClubDetail(clubId);
+  }
+
+  /// 신청 취소 후 최신 상태(CANCELED)로 다시 조회. 실패하면 [ApiException]
+  Future<Club> cancelJoin(int clubId) async {
+    await _repository.cancelJoin(clubId);
+    return fetchClubDetail(clubId);
+  }
+
+  /// 별을 누르면 화면에 먼저 반영하고 서버에 저장.
+  /// 서버 저장에 실패하면 원래대로 되돌리고 [ApiException]을 던진다.
+  Future<void> toggleFavorite(int clubId) async {
+    final wasFavorite = _favoriteIds.contains(clubId);
+    _setFavorite(clubId, !wasFavorite);
+    try {
+      if (wasFavorite) {
+        await _repository.removeFavorite(clubId);
+      } else {
+        await _repository.addFavorite(clubId);
+      }
+    } on ApiException catch (e) {
+      // 409(이미 추가됨)·404(이미 해제됨)는 서버와 화면이 같은 상태라 그대로 둠
+      if (e.statusCode == 409 || e.statusCode == 404) return;
+      _setFavorite(clubId, wasFavorite);
+      rethrow;
+    } catch (_) {
+      _setFavorite(clubId, wasFavorite);
+      rethrow;
+    }
+  }
+
+  void _setFavorite(int clubId, bool value) {
+    value ? _favoriteIds.add(clubId) : _favoriteIds.remove(clubId);
+    notifyListeners();
+  }
+
+  /// 로그아웃 시: 사용자별 정보(즐겨찾기 등) 비우기
+  void clear() {
+    _clubs = [];
+    _favoriteIds.clear();
+    _keyword = '';
+    _selectedCategory = null;
+    _recruitingOnly = false;
+    _errorMessage = null;
     notifyListeners();
   }
 }

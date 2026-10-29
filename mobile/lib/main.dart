@@ -24,15 +24,24 @@ Future<void> main() async {
   // 저장된 토큰이 있으면 자동 로그인
   await authProvider.restore();
 
+  // 동아리 목록: 실제 서버에서 불러오기 (서버 없이 화면만 볼 때는 MockClubRepository())
+  final clubProvider = ClubProvider(ApiClubRepository(apiClient));
+  if (authProvider.isLoggedIn) clubProvider.loadClubs();
+
+  // 로그인하면 내 즐겨찾기·가입 상태가 담긴 목록을 다시 불러오고, 로그아웃하면 비움
+  var wasLoggedIn = authProvider.isLoggedIn;
+  authProvider.addListener(() {
+    if (authProvider.isLoggedIn == wasLoggedIn) return;
+    wasLoggedIn = authProvider.isLoggedIn;
+    wasLoggedIn ? clubProvider.loadClubs() : clubProvider.clear();
+  });
+
   runApp(
     MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: apiClient),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
-        // TODO(동아리 목록 서버 연동 단계): ApiClubRepository(apiClient)로 교체
-        ChangeNotifierProvider(
-          create: (_) => ClubProvider(MockClubRepository())..loadClubs(),
-        ),
+        ChangeNotifierProvider<ClubProvider>.value(value: clubProvider),
       ],
       child: const ClubItApp(),
     ),
