@@ -18,6 +18,12 @@ abstract class ClubRepository {
   Future<void> addFavorite(int clubId);
 
   Future<void> removeFavorite(int clubId);
+
+  /// 가입 신청 (신청 메시지는 선택)
+  Future<void> applyJoin(int clubId, {String? message});
+
+  /// 대기 중인 가입 신청 취소
+  Future<void> cancelJoin(int clubId);
 }
 
 /// 실제 서버(FastAPI)와 통신하는 구현
@@ -59,10 +65,23 @@ class ApiClubRepository implements ClubRepository {
   Future<void> removeFavorite(int clubId) async {
     await _api.delete('/clubs/$clubId/favorite');
   }
+
+  @override
+  Future<void> applyJoin(int clubId, {String? message}) async {
+    await _api.post('/clubs/$clubId/join', body: {'message': message});
+  }
+
+  @override
+  Future<void> cancelJoin(int clubId) async {
+    await _api.post('/clubs/$clubId/join/cancel');
+  }
 }
 
 /// 서버 없이 화면을 개발·테스트할 때 쓰는 가짜 구현
 class MockClubRepository implements ClubRepository {
+  /// 가짜 가입 상태 (clubId → PENDING / CANCELED)
+  final Map<int, String> _statuses = {};
+
   @override
   Future<List<Club>> fetchClubs() async {
     // 네트워크 지연 흉내
@@ -72,7 +91,9 @@ class MockClubRepository implements ClubRepository {
 
   @override
   Future<Club> fetchClub(int clubId) async {
-    return mockClubs.firstWhere((c) => c.id == clubId);
+    final club = mockClubs.firstWhere((c) => c.id == clubId);
+    final status = _statuses[clubId];
+    return status == null ? club : club.copyWith(myStatus: status);
   }
 
   @override
@@ -85,4 +106,14 @@ class MockClubRepository implements ClubRepository {
 
   @override
   Future<void> removeFavorite(int clubId) async {}
+
+  @override
+  Future<void> applyJoin(int clubId, {String? message}) async {
+    _statuses[clubId] = 'PENDING';
+  }
+
+  @override
+  Future<void> cancelJoin(int clubId) async {
+    _statuses[clubId] = 'CANCELED';
+  }
 }

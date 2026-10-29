@@ -10,6 +10,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../../data/models/club.dart';
 import '../../data/models/post.dart';
@@ -32,6 +33,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   Club? _club;
   List<Post> _posts = [];
   bool _isLoading = true;
+  bool _isCancelling = false;
   String? _errorMessage;
 
   @override
@@ -71,6 +73,33 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     await context.push(RoutePaths.clubApply(club.id));
     // 신청 화면에서 돌아오면 가입 상태가 바뀌었을 수 있으니 다시 조회
     if (mounted) _load();
+  }
+
+  Future<void> _cancelJoin(Club club) async {
+    final ok = await showConfirmDialog(
+      context,
+      title: '신청 취소',
+      message: '${club.name} 가입 신청을 취소할까요?',
+      confirmLabel: '신청 취소',
+      cancelLabel: '닫기',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    setState(() => _isCancelling = true);
+    try {
+      final updated = await context.read<ClubProvider>().cancelJoin(club.id);
+      if (!mounted) return;
+      setState(() => _club = updated);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('가입 신청을 취소했어요.')),
+      );
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
+    }
   }
 
   @override
@@ -147,6 +176,8 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
         bottomNavigationBar: _BottomAction(
           club: club,
           onApply: () => _openApply(club),
+          onCancel: () => _cancelJoin(club),
+          isBusy: _isCancelling,
         ),
       ),
     );
@@ -303,22 +334,60 @@ class _PostsTab extends StatelessWidget {
   }
 }
 
-/// 하단 고정 버튼 — 모집 여부(recruit_status) + 내 가입 상태(my_status)로 결정
+/// 하단 고정 영역 — 모집 여부(recruit_status) + 내 가입 상태(my_status)로 결정
+/// - 대기 중: 안내 문구 + [신청 취소]
+/// - 그 외: 상태에 맞는 버튼 하나
 class _BottomAction extends StatelessWidget {
-  const _BottomAction({required this.club, required this.onApply});
+  const _BottomAction({
+    required this.club,
+    required this.onApply,
+    required this.onCancel,
+    required this.isBusy,
+  });
 
   final Club club;
   final VoidCallback onApply;
+  final VoidCallback onCancel;
+  final bool isBusy;
 
   @override
   Widget build(BuildContext context) {
-    final (label, onPressed) = switch (club.myStatus) {
-      'APPROVED' => ('가입한 동아리예요', null),
-      // TODO(가입 신청 단계): '신청 취소' 버튼으로 변경
-      'PENDING' => ('승인 대기 중', null),
-      _ when !club.isRecruiting => ('모집 기간이 아닙니다', null),
-      _ => ('가입 신청하기', onApply),
-    };
+    final Widget content;
+    if (club.myStatus == 'PENDING') {
+      content = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.hourglass_top_rounded,
+                  size: 18, color: AppColors.accent),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  '가입 신청 완료 · 임원 승인을 기다리고 있어요',
+                  style: AppTextStyles.bodySecondary
+                      .copyWith(color: AppColors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSizes.gapM),
+          AppButton(
+            label: '신청 취소',
+            variant: AppButtonVariant.outlined,
+            isLoading: isBusy,
+            onPressed: onCancel,
+          ),
+        ],
+      );
+    } else {
+      final (label, onPressed) = switch (club.myStatus) {
+        'APPROVED' => ('가입한 동아리예요', null),
+        _ when !club.isRecruiting => ('모집 기간이 아닙니다', null),
+        _ => ('가입 신청하기', onApply),
+      };
+      content = AppButton(label: label, isLoading: isBusy, onPressed: onPressed);
+    }
 
     return Container(
       decoration: const BoxDecoration(
@@ -328,7 +397,7 @@ class _BottomAction extends StatelessWidget {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-          child: AppButton(label: label, onPressed: onPressed),
+          child: content,
         ),
       ),
     );

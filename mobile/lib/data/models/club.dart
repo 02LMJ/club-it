@@ -40,6 +40,21 @@ class Club {
 
   bool get isOfficer => myRole == 'OFFICER';
 
+  /// 일부 값만 바꾼 복사본 (가짜 데이터에서 가입 상태를 바꿀 때 사용)
+  Club copyWith({bool? isFavorite, String? myStatus, String? myRole}) {
+    return Club(
+      id: id,
+      name: name,
+      category: category,
+      description: description,
+      isRecruiting: isRecruiting,
+      memberCount: memberCount,
+      isFavorite: isFavorite ?? this.isFavorite,
+      myStatus: myStatus ?? this.myStatus,
+      myRole: myRole ?? this.myRole,
+    );
+  }
+
   /// 서버 JSON(snake_case) → Club
   factory Club.fromJson(Map<String, dynamic> json) {
     final category = (json['category'] as String?)?.trim() ?? '';

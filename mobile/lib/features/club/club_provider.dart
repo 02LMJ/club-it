@@ -116,6 +116,22 @@ class ClubProvider extends ChangeNotifier {
 
   Future<List<Post>> fetchPosts(int clubId) => _repository.fetchPosts(clubId);
 
+  /// 가입 신청 후 최신 상태(PENDING)로 다시 조회. 실패하면 [ApiException]
+  Future<Club> applyJoin(int clubId, {String? message}) async {
+    final trimmed = message?.trim();
+    await _repository.applyJoin(
+      clubId,
+      message: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
+    );
+    return fetchClubDetail(clubId);
+  }
+
+  /// 신청 취소 후 최신 상태(CANCELED)로 다시 조회. 실패하면 [ApiException]
+  Future<Club> cancelJoin(int clubId) async {
+    await _repository.cancelJoin(clubId);
+    return fetchClubDetail(clubId);
+  }
+
   /// 별을 누르면 화면에 먼저 반영하고 서버에 저장.
   /// 서버 저장에 실패하면 원래대로 되돌리고 [ApiException]을 던진다.
   Future<void> toggleFavorite(int clubId) async {
