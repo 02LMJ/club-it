@@ -63,7 +63,7 @@ class ClubCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSizes.gapS),
                 Text(
-                  club.description.isNotEmpty ? club.description : club.summary,
+                  club.description.isNotEmpty ? club.description : '소개가 아직 없어요.',
                   style: AppTextStyles.bodySecondary.copyWith(fontSize: 15),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,

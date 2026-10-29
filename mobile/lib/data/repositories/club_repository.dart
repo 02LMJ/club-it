@@ -1,3 +1,4 @@
+import '../../core/network/api_client.dart';
 import '../mock/mock_clubs.dart';
 import '../models/club.dart';
 
@@ -6,9 +7,40 @@ import '../models/club.dart';
 /// 서버 API인지는 main.dart에서 갈아끼운다.
 abstract class ClubRepository {
   Future<List<Club>> fetchClubs();
+
+  Future<void> addFavorite(int clubId);
+
+  Future<void> removeFavorite(int clubId);
 }
 
-/// 서버 연동 전 사용하는 가짜 구현
+/// 실제 서버(FastAPI)와 통신하는 구현
+class ApiClubRepository implements ClubRepository {
+  ApiClubRepository(this._api);
+
+  final ApiClient _api;
+
+  /// 로그인 토큰이 함께 가므로 응답에 is_favorite, my_status가 채워진다.
+  /// 검색·필터는 받아온 목록에서 앱이 바로 처리 (타이핑할 때마다 요청하지 않도록)
+  @override
+  Future<List<Club>> fetchClubs() async {
+    final data = await _api.get('/clubs', query: {'limit': '100'});
+    return (data as List)
+        .map((e) => Club.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<void> addFavorite(int clubId) async {
+    await _api.post('/clubs/$clubId/favorite');
+  }
+
+  @override
+  Future<void> removeFavorite(int clubId) async {
+    await _api.delete('/clubs/$clubId/favorite');
+  }
+}
+
+/// 서버 없이 화면을 개발·테스트할 때 쓰는 가짜 구현
 class MockClubRepository implements ClubRepository {
   @override
   Future<List<Club>> fetchClubs() async {
@@ -16,6 +48,10 @@ class MockClubRepository implements ClubRepository {
     await Future<void>.delayed(const Duration(milliseconds: 300));
     return mockClubs;
   }
-}
 
-// TODO(서버 연동 단계): ApiClubRepository implements ClubRepository 작성
+  @override
+  Future<void> addFavorite(int clubId) async {}
+
+  @override
+  Future<void> removeFavorite(int clubId) async {}
+}

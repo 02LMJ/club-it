@@ -8,6 +8,7 @@ import '../../core/theme/app_sizes.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/placeholder_view.dart';
 import 'club_provider.dart';
+import 'favorite_action.dart';
 
 /// S04 동아리 상세 — 구조 확인용 임시 화면
 /// TODO(상세 화면 단계): 동아리 헤더, [소개]/[게시판] 탭, 가입 상태별 하단 버튼
@@ -33,7 +34,7 @@ class ClubDetailScreen extends StatelessWidget {
         title: Text(club.name),
         actions: [
           IconButton(
-            onPressed: () => provider.toggleFavorite(club.id),
+            onPressed: () => toggleFavoriteWithFeedback(context, club.id),
             icon: Icon(
               provider.isFavorite(club.id) ? Icons.star : Icons.star_border,
               color: provider.isFavorite(club.id) ? AppColors.favorite : null,
