@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../core/network/api_exception.dart';
 import '../../data/models/club.dart';
 import '../../data/repositories/club_repository.dart';
 
@@ -68,6 +69,12 @@ class ClubProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _clubs = await _repository.fetchClubs();
+      // 서버가 알려준 즐겨찾기 상태로 맞춤
+      _favoriteIds
+        ..clear()
+        ..addAll(_clubs.where((c) => c.isFavorite).map((c) => c.id));
+    } on ApiException catch (e) {
+      _errorMessage = e.message;
     } catch (e) {
       _errorMessage = '동아리 목록을 불러오지 못했습니다.';
     } finally {
@@ -92,11 +99,35 @@ class ClubProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// TODO(즐겨찾기 구현 단계): 서버 FAVORITE API 호출
-  void toggleFavorite(int clubId) {
-    if (!_favoriteIds.remove(clubId)) {
-      _favoriteIds.add(clubId);
+  /// 화면을 먼저 바꾸고 서버에 저장. 실패하면 원래대로 되돌림.
+  Future<void> toggleFavorite(int clubId) async {
+    final favorite = !_favoriteIds.contains(clubId);
+    _applyFavorite(clubId, favorite);
+    try {
+      await _repository.setFavorite(clubId, favorite: favorite);
+    } on ApiException catch (e) {
+      // 409(이미 추가됨)·404(이미 해제됨)는 서버와 화면이 같은 상태라 그대로 둠
+      if (e.statusCode == 409 || e.statusCode == 404) return;
+      _applyFavorite(clubId, !favorite);
+    } catch (_) {
+      _applyFavorite(clubId, !favorite);
     }
+  }
+
+  void _applyFavorite(int clubId, bool favorite) {
+    if (favorite) {
+      _favoriteIds.add(clubId);
+    } else {
+      _favoriteIds.remove(clubId);
+    }
+    notifyListeners();
+  }
+
+  /// 로그아웃 시 이전 사용자의 즐겨찾기·가입 상태가 남지 않도록 비움
+  void clear() {
+    _clubs = [];
+    _favoriteIds.clear();
+    _errorMessage = null;
     notifyListeners();
   }
 }
