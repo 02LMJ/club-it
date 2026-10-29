@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/network/api_exception.dart';
 import '../../data/models/club.dart';
+import '../../data/models/post.dart';
 import '../../data/repositories/club_repository.dart';
 
 /// 동아리 목록, 검색어, 즐겨찾기 상태 관리.
@@ -98,6 +99,22 @@ class ClubProvider extends ChangeNotifier {
     _recruitingOnly = value;
     notifyListeners();
   }
+
+  /// 상세 화면용: 서버에서 최신 정보를 받아 목록에도 반영 (멤버 수·가입 상태 등)
+  Future<Club> fetchClubDetail(int clubId) async {
+    final club = await _repository.fetchClub(clubId);
+    final index = _clubs.indexWhere((c) => c.id == clubId);
+    if (index != -1) {
+      final updated = [..._clubs];
+      updated[index] = club;
+      _clubs = updated;
+    }
+    club.isFavorite ? _favoriteIds.add(clubId) : _favoriteIds.remove(clubId);
+    notifyListeners();
+    return club;
+  }
+
+  Future<List<Post>> fetchPosts(int clubId) => _repository.fetchPosts(clubId);
 
   /// 별을 누르면 화면에 먼저 반영하고 서버에 저장.
   /// 서버 저장에 실패하면 원래대로 되돌리고 [ApiException]을 던진다.

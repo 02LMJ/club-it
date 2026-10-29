@@ -1,4 +1,5 @@
 import '../models/club.dart';
+import '../models/post.dart';
 
 /// 서버 API가 준비되기 전까지 화면 개발에 사용하는 가짜 데이터
 const List<Club> mockClubs = [
@@ -49,5 +50,30 @@ const List<Club> mockClubs = [
     description: '주 2회 정기 훈련과 교내외 리그에 참가하는 축구 동아리입니다.',
     isRecruiting: true,
     memberCount: 35,
+  ),
+];
+
+/// 가짜 게시물 (CATS에만 2개)
+final List<Post> mockPosts = [
+  Post(
+    id: 1,
+    clubId: 1,
+    authorId: 2,
+    authorName: '김임원',
+    type: 'NOTICE',
+    title: '이번 주 스터디 공지',
+    content: '이번 주 목요일 오후 7시, 공대 5호관에서 알고리즘 스터디를 진행합니다.',
+    createdAt: DateTime(2026, 10, 27, 18, 30),
+    commentCount: 2,
+  ),
+  Post(
+    id: 2,
+    clubId: 1,
+    authorId: 2,
+    authorName: '김임원',
+    type: 'RECRUIT',
+    title: '2026-2 신입 부원 모집',
+    content: '프로그래밍에 관심 있는 누구나 지원 가능합니다.',
+    createdAt: DateTime(2026, 10, 20, 12, 0),
   ),
 ];

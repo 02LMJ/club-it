@@ -1,12 +1,19 @@
 import '../../core/network/api_client.dart';
 import '../mock/mock_clubs.dart';
 import '../models/club.dart';
+import '../models/post.dart';
 
 /// 동아리 데이터를 가져오는 방법을 정의한 인터페이스.
 /// 화면(Provider)은 이 인터페이스만 알고, 실제 구현이 가짜 데이터인지
 /// 서버 API인지는 main.dart에서 갈아끼운다.
 abstract class ClubRepository {
   Future<List<Club>> fetchClubs();
+
+  /// 동아리 상세 (내 가입 상태·역할 포함)
+  Future<Club> fetchClub(int clubId);
+
+  /// 동아리 게시물 목록 (최신순)
+  Future<List<Post>> fetchPosts(int clubId);
 
   Future<void> addFavorite(int clubId);
 
@@ -30,6 +37,20 @@ class ApiClubRepository implements ClubRepository {
   }
 
   @override
+  Future<Club> fetchClub(int clubId) async {
+    final data = await _api.get('/clubs/$clubId');
+    return Club.fromJson(data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<List<Post>> fetchPosts(int clubId) async {
+    final data = await _api.get('/clubs/$clubId/posts', query: {'limit': '50'});
+    return (data as List)
+        .map((e) => Post.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
   Future<void> addFavorite(int clubId) async {
     await _api.post('/clubs/$clubId/favorite');
   }
@@ -47,6 +68,16 @@ class MockClubRepository implements ClubRepository {
     // 네트워크 지연 흉내
     await Future<void>.delayed(const Duration(milliseconds: 300));
     return mockClubs;
+  }
+
+  @override
+  Future<Club> fetchClub(int clubId) async {
+    return mockClubs.firstWhere((c) => c.id == clubId);
+  }
+
+  @override
+  Future<List<Post>> fetchPosts(int clubId) async {
+    return mockPosts.where((p) => p.clubId == clubId).toList();
   }
 
   @override

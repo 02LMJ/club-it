@@ -42,6 +42,17 @@ class AppBadge extends StatelessWidget {
     );
   }
 
+  /// 게시물 종류: 공지는 캐러멜, 모집·홍보는 베이지
+  factory AppBadge.postType(String label, {required bool isNotice, Key? key}) {
+    return AppBadge(
+      key: key,
+      label: label,
+      color: isNotice ? AppColors.surface : AppColors.textSecondary,
+      backgroundColor: isNotice ? AppColors.accent : AppColors.tagBackground,
+      bold: isNotice,
+    );
+  }
+
   factory AppBadge.notice({Key? key}) {
     return AppBadge(
       key: key,

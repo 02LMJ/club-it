@@ -127,4 +127,25 @@ void main() {
     expect(find.text('전체 동아리 4'), findsOneWidget); // 모집 마감 2개 숨김
     expect(find.text('COSMIC'), findsNothing); // 모집 마감 동아리는 숨김
   });
+
+  testWidgets('동아리 카드를 누르면 상세 화면(소개·게시판·가입 버튼)이 열린다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('동아리 소개'), findsOneWidget);
+    expect(find.text('게시판 2'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, '가입 신청하기'), findsOneWidget);
+
+    await tester.tap(find.text('게시판 2'));
+    await tester.pumpAndSettle();
+    expect(find.text('이번 주 스터디 공지'), findsOneWidget);
+  });
 }
