@@ -127,6 +127,11 @@ class ClubProvider extends ChangeNotifier {
       } else {
         await _repository.addFavorite(clubId);
       }
+    } on ApiException catch (e) {
+      // 409(이미 추가됨)·404(이미 해제됨)는 서버와 화면이 같은 상태라 그대로 둠
+      if (e.statusCode == 409 || e.statusCode == 404) return;
+      _setFavorite(clubId, wasFavorite);
+      rethrow;
     } catch (_) {
       _setFavorite(clubId, wasFavorite);
       rethrow;
