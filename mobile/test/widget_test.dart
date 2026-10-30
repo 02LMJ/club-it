@@ -242,4 +242,38 @@ void main() {
     expect(find.text('승인 대기'), findsOneWidget);
     expect(find.text('거절 사유: 이번 학기 모집 정원 마감'), findsOneWidget);
   });
+
+  testWidgets('게시판에서 종류 칩으로 공지·모집·홍보만 골라 볼 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('게시판 2'));
+    await tester.pumpAndSettle();
+
+    // 처음엔 전체: 공지 + 모집글
+    expect(find.text('이번 주 스터디 공지'), findsOneWidget);
+    expect(find.text('2026-2 신입 부원 모집'), findsOneWidget);
+
+    // 모집만
+    await tester.tap(find.widgetWithText(ChoiceChip, '모집'));
+    await tester.pumpAndSettle();
+    expect(find.text('2026-2 신입 부원 모집'), findsOneWidget);
+    expect(find.text('이번 주 스터디 공지'), findsNothing);
+
+    // 홍보글은 없음
+    await tester.tap(find.widgetWithText(ChoiceChip, '홍보'));
+    await tester.pumpAndSettle();
+    expect(find.text('홍보 게시물이 없어요'), findsOneWidget);
+
+    // 다시 전체
+    await tester.tap(find.widgetWithText(ChoiceChip, '전체'));
+    await tester.pumpAndSettle();
+    expect(find.text('이번 주 스터디 공지'), findsOneWidget);
+  });
 }
