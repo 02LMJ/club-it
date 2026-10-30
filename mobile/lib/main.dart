@@ -7,6 +7,7 @@ import 'core/network/api_config.dart';
 import 'core/storage/token_storage.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/club_repository.dart';
+import 'data/repositories/post_repository.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/club/club_provider.dart';
 
@@ -42,6 +43,7 @@ Future<void> main() async {
         Provider<ApiClient>.value(value: apiClient),
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider<ClubProvider>.value(value: clubProvider),
+        Provider<PostRepository>.value(value: ApiPostRepository(apiClient)),
       ],
       child: const ClubItApp(),
     ),
