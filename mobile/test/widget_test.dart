@@ -9,9 +9,11 @@ import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/data/models/user.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
 import 'package:mobile/data/repositories/club_repository.dart';
+import 'package:mobile/data/repositories/membership_repository.dart';
 import 'package:mobile/data/repositories/post_repository.dart';
 import 'package:mobile/features/auth/auth_provider.dart';
 import 'package:mobile/features/club/club_provider.dart';
+import 'package:mobile/features/mypage/membership_provider.dart';
 
 /// 서버 없이 테스트하기 위한 가짜 로그인 저장소
 class FakeAuthRepository implements AuthRepository {
@@ -52,6 +54,9 @@ Future<void> pumpApp(WidgetTester tester) async {
         ),
         ChangeNotifierProvider(
           create: (_) => ClubProvider(MockClubRepository())..loadClubs(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MembershipProvider(MockMembershipRepository()),
         ),
         Provider<PostRepository>(create: (_) => MockPostRepository()),
       ],
@@ -220,5 +225,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('댓글 1'), findsOneWidget);
     expect(find.text('참석할게요!'), findsNothing);
+  });
+
+  testWidgets('마이 탭에서 가입 신청 현황과 거절 사유를 볼 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('마이'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('가입 신청 현황 2'), findsOneWidget);
+    expect(find.text('승인 대기'), findsOneWidget);
+    expect(find.text('거절 사유: 이번 학기 모집 정원 마감'), findsOneWidget);
   });
 }
