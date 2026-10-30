@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -34,7 +35,20 @@ class _ClubItAppState extends State<ClubItApp> {
       debugShowCheckedModeBanner: false,
       title: 'Club-it',
       theme: AppTheme.light,
+      scrollBehavior: const _AppScrollBehavior(),
       routerConfig: _router,
     );
   }
+}
+
+///데스크톱 마우스 스크롤 허용
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  const _AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.trackpad,
+      };
 }

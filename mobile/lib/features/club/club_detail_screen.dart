@@ -75,6 +75,12 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     if (mounted) _load();
   }
 
+  /// 게시물을 보고 돌아오면 댓글 수가 바뀌었을 수 있으니 다시 조회
+  Future<void> _openPost(Post post) async {
+    await context.push(RoutePaths.postDetail(post.id));
+    if (mounted) _load();
+  }
+
   Future<void> _cancelJoin(Club club) async {
     final ok = await showConfirmDialog(
       context,
@@ -167,6 +173,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
                     posts: _posts,
                     isLoading: _isLoading,
                     onRefresh: _load,
+                    onOpen: _openPost,
                   ),
                 ],
               ),
@@ -290,11 +297,13 @@ class _PostsTab extends StatelessWidget {
     required this.posts,
     required this.isLoading,
     required this.onRefresh,
+    required this.onOpen,
   });
 
   final List<Post> posts;
   final bool isLoading;
   final Future<void> Function() onRefresh;
+  final void Function(Post post) onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +335,7 @@ class _PostsTab extends StatelessWidget {
                 final post = posts[index];
                 return PostTile(
                   post: post,
-                  onTap: () => context.push(RoutePaths.postDetail(post.id)),
+                  onTap: () => onOpen(post),
                 );
               },
             ),
