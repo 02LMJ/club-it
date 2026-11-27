@@ -291,6 +291,11 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '로그인'));
     await tester.pumpAndSettle();
 
+    // 로그인 직후엔 아직 안 불러왔으니 배지 없음 → 탭을 옮기면 불러와서 배지 1
+    await tester.tap(find.text('즐겨찾기'));
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(Badge, '1'), findsWidgets);
+
     await tester.tap(find.text('알림'));
     await tester.pumpAndSettle();
 
@@ -308,5 +313,7 @@ void main() {
     await tester.pageBack();
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('unread-dot')), findsNothing);
+    // 다 읽었으니 배지도 사라짐
+    expect(find.widgetWithText(Badge, '1'), findsNothing);
   });
 }
