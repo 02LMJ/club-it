@@ -10,10 +10,12 @@ import 'package:mobile/data/models/user.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
 import 'package:mobile/data/repositories/club_repository.dart';
 import 'package:mobile/data/repositories/membership_repository.dart';
+import 'package:mobile/data/repositories/notification_repository.dart';
 import 'package:mobile/data/repositories/post_repository.dart';
 import 'package:mobile/features/auth/auth_provider.dart';
 import 'package:mobile/features/club/club_provider.dart';
 import 'package:mobile/features/mypage/membership_provider.dart';
+import 'package:mobile/features/notification/notification_provider.dart';
 
 /// 서버 없이 테스트하기 위한 가짜 로그인 저장소
 class FakeAuthRepository implements AuthRepository {
@@ -57,6 +59,9 @@ Future<void> pumpApp(WidgetTester tester) async {
         ),
         ChangeNotifierProvider(
           create: (_) => MembershipProvider(MockMembershipRepository()),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => NotificationProvider(MockNotificationRepository()),
         ),
         Provider<PostRepository>(create: (_) => MockPostRepository()),
       ],
@@ -275,5 +280,33 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, '전체'));
     await tester.pumpAndSettle();
     expect(find.text('이번 주 스터디 공지'), findsOneWidget);
+  });
+
+  testWidgets('알림 탭에서 알림을 보고, 누르면 읽음 처리 후 게시물로 이동한다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('알림'));
+    await tester.pumpAndSettle();
+
+    // 목록: 새 게시물 알림(안 읽음) + 가입 승인 알림(읽음)
+    expect(find.text('[CATS] 새 공지사항: 이번 주 스터디 공지'), findsOneWidget);
+    expect(find.text('[IPSE] 가입 신청이 승인되었습니다.'), findsOneWidget);
+    expect(find.byKey(const ValueKey('unread-dot')), findsOneWidget);
+
+    // 게시물 알림을 누르면 게시물 상세로 이동
+    await tester.tap(find.text('[CATS] 새 공지사항: 이번 주 스터디 공지'));
+    await tester.pumpAndSettle();
+    expect(find.text('이번 주 스터디 공지'), findsWidgets);
+
+    // 돌아오면 읽음 처리되어 있음
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('unread-dot')), findsNothing);
   });
 }

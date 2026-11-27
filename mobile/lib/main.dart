@@ -8,10 +8,12 @@ import 'core/storage/token_storage.dart';
 import 'data/repositories/auth_repository.dart';
 import 'data/repositories/club_repository.dart';
 import 'data/repositories/membership_repository.dart';
+import 'data/repositories/notification_repository.dart';
 import 'data/repositories/post_repository.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/club/club_provider.dart';
 import 'features/mypage/membership_provider.dart';
+import 'features/notification/notification_provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +33,12 @@ Future<void> main() async {
   final clubProvider = ClubProvider(ApiClubRepository(apiClient));
   final membershipProvider =
       MembershipProvider(ApiMembershipRepository(apiClient));
+  final notificationProvider =
+      NotificationProvider(ApiNotificationRepository(apiClient));
   if (authProvider.isLoggedIn) {
     clubProvider.loadClubs();
     membershipProvider.load();
+    notificationProvider.load();
   }
 
   // 로그인하면 내 즐겨찾기·가입 상태가 담긴 목록을 다시 불러오고, 로그아웃하면 비움
@@ -44,9 +49,11 @@ Future<void> main() async {
     if (wasLoggedIn) {
       clubProvider.loadClubs();
       membershipProvider.load();
+      notificationProvider.load();
     } else {
       clubProvider.clear();
       membershipProvider.clear();
+      notificationProvider.clear();
     }
   });
 
@@ -58,6 +65,9 @@ Future<void> main() async {
         ChangeNotifierProvider<ClubProvider>.value(value: clubProvider),
         ChangeNotifierProvider<MembershipProvider>.value(
           value: membershipProvider,
+        ),
+        ChangeNotifierProvider<NotificationProvider>.value(
+          value: notificationProvider,
         ),
         Provider<PostRepository>.value(value: ApiPostRepository(apiClient)),
       ],
