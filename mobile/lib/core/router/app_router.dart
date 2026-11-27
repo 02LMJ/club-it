@@ -12,6 +12,7 @@ import '../../features/favorite/favorite_screen.dart';
 import '../../features/mypage/my_screen.dart';
 import '../../features/notification/notification_screen.dart';
 import '../../features/post/post_detail_screen.dart';
+import '../../features/post/post_edit_screen.dart';
 import '../../features/shell/main_shell.dart';
 import 'route_paths.dart';
 
@@ -20,6 +21,7 @@ import 'route_paths.dart';
 /// /welcome, /login, /signup  로그인 전 화면
 /// /, /favorites, ...         하단 탭 4개 (MainShell 안에서 열림)
 /// /clubs/:id, /posts/:id     상세 화면 (하단 탭 없이 전체 화면)
+/// /clubs/:id/posts/new       게시물 작성, /posts/:id/edit 게시물 수정
 GoRouter createRouter(AuthProvider auth) {
   return GoRouter(
     initialLocation: RoutePaths.home,
@@ -94,12 +96,26 @@ GoRouter createRouter(AuthProvider auth) {
             builder: (context, state) =>
                 ClubApplyScreen(clubId: _idParam(state, 'clubId')),
           ),
+          // 임원: 게시물 작성
+          GoRoute(
+            path: 'posts/new',
+            builder: (context, state) =>
+                PostEditScreen(clubId: _idParam(state, 'clubId')),
+          ),
         ],
       ),
       GoRoute(
         path: '/posts/:postId',
         builder: (context, state) =>
             PostDetailScreen(postId: _idParam(state, 'postId')),
+        routes: [
+          // 작성자: 게시물 수정
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) =>
+                PostEditScreen(postId: _idParam(state, 'postId')),
+          ),
+        ],
       ),
 
       // 개발용: 공통 디자인 요소 미리보기

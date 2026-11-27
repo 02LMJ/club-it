@@ -15,12 +15,14 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../../data/models/club.dart';
 import '../../data/models/post.dart';
+import '../auth/auth_provider.dart';
 import '../post/widgets/post_tile.dart';
 import 'club_provider.dart';
 import 'favorite_action.dart';
 
 /// S04 동아리 상세
 /// 헤더(태그·이름·멤버 수) / [소개]·[게시판] 탭 / 가입 상태별 하단 버튼
+/// 이 동아리 임원(또는 관리자)에게는 [글쓰기] 버튼 표시
 class ClubDetailScreen extends StatefulWidget {
   const ClubDetailScreen({super.key, required this.clubId});
 
@@ -82,6 +84,12 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
     if (mounted) _load();
   }
 
+  /// 임원: 게시물 작성 → 등록하고 돌아오면 게시판 새로고침
+  Future<void> _openWrite(Club club) async {
+    final saved = await context.push<bool>(RoutePaths.postNew(club.id));
+    if (saved == true && mounted) _load();
+  }
+
   Future<void> _cancelJoin(Club club) async {
     final ok = await showConfirmDialog(
       context,
@@ -113,6 +121,7 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   Widget build(BuildContext context) {
     final club = _club;
     final isFavorite = context.watch<ClubProvider>().isFavorite(widget.clubId);
+    final isAdmin = context.watch<AuthProvider>().user?.isAdmin ?? false;
 
     if (club == null) {
       return Scaffold(
@@ -181,6 +190,15 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
             ),
           ],
         ),
+        floatingActionButton: (club.isOfficer || isAdmin)
+            ? FloatingActionButton.extended(
+                onPressed: () => _openWrite(club),
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.surface,
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('글쓰기'),
+              )
+            : null,
         bottomNavigationBar: _BottomAction(
           club: club,
           onApply: () => _openApply(club),

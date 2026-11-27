@@ -316,4 +316,88 @@ void main() {
     // 다 읽었으니 배지도 사라짐
     expect(find.widgetWithText(Badge, '1'), findsNothing);
   });
+
+  testWidgets('임원은 동아리 상세에서 글쓰기로 게시물을 등록할 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 임원이 아닌 동아리에는 글쓰기 버튼 없음
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+    expect(find.text('글쓰기'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // 학생1이 임원인 울림 (검색해서 들어가기)
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('글쓰기'));
+    await tester.pumpAndSettle();
+    expect(find.text('게시물 작성'), findsOneWidget);
+
+    // 빈 값으로 등록하면 검증 문구
+    await tester.tap(find.widgetWithText(TextButton, '등록'));
+    await tester.pumpAndSettle();
+    expect(find.text('제목을 입력해주세요.'), findsOneWidget);
+    expect(find.text('내용을 입력해주세요.'), findsOneWidget);
+
+    // 종류·제목·내용 입력 후 등록 → 상세 화면으로 돌아옴
+    await tester.tap(find.widgetWithText(ChoiceChip, '홍보'));
+    await tester.enterText(find.byType(TextFormField).at(0), '신입 환영 공연');
+    await tester.enterText(find.byType(TextFormField).at(1), '모두 놀러 오세요!');
+    await tester.tap(find.widgetWithText(TextButton, '등록'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('게시물을 등록했어요.'), findsOneWidget);
+    expect(find.text('게시물 작성'), findsNothing);
+  });
+
+  testWidgets('작성자는 게시물을 수정하고 삭제할 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('게시판 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('울림 정기 공연 안내'));
+    await tester.pumpAndSettle();
+
+    // ⋮ → 수정 → 기존 내용이 채워진 수정 화면
+    await tester.tap(find.byTooltip('게시물 메뉴'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('수정'));
+    await tester.pumpAndSettle();
+    expect(find.text('게시물 수정'), findsOneWidget);
+    expect(find.text('울림 정기 공연 안내'), findsOneWidget);
+
+    await tester.enterText(
+        find.byType(TextFormField).at(0), '울림 정기 공연 안내 (장소 변경)');
+    await tester.tap(find.widgetWithText(TextButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('울림 정기 공연 안내 (장소 변경)'), findsOneWidget);
+
+    // ⋮ → 삭제 → 확인 → 게시판으로 돌아옴
+    await tester.tap(find.byTooltip('게시물 메뉴'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('삭제'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '삭제'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('게시물을 삭제했어요.'), findsOneWidget);
+    expect(find.byTooltip('게시물 메뉴'), findsNothing);
+  });
 }
