@@ -10,6 +10,7 @@ import '../../core/theme/app_text_styles.dart';
 import '../../core/widgets/app_badge.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_card.dart';
+import '../../core/widgets/category_chip.dart';
 import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../../data/models/club.dart';
@@ -291,8 +292,8 @@ class _IntroTab extends StatelessWidget {
   }
 }
 
-/// [게시판] 탭: 게시물 목록 (최신순), 아래로 당겨 새로고침
-class _PostsTab extends StatelessWidget {
+/// [게시판] 탭: 종류 필터(전체·공지·모집·홍보) + 게시물 목록 (최신순), 아래로 당겨 새로고침
+class _PostsTab extends StatefulWidget {
   const _PostsTab({
     required this.posts,
     required this.isLoading,
@@ -306,39 +307,87 @@ class _PostsTab extends StatelessWidget {
   final void Function(Post post) onOpen;
 
   @override
+  State<_PostsTab> createState() => _PostsTabState();
+}
+
+class _PostsTabState extends State<_PostsTab> {
+  /// 필터 칩: (서버 post_type, 화면 글자). null = 전체
+  static const _types = <(String?, String)>[
+    (null, '전체'),
+    ('NOTICE', '공지'),
+    ('RECRUIT', '모집'),
+    ('PROMO', '홍보'),
+  ];
+
+  String? _selectedType;
+
+  @override
   Widget build(BuildContext context) {
-    if (isLoading && posts.isEmpty) {
+    if (widget.isLoading && widget.posts.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: onRefresh,
-      child: posts.isEmpty
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
-                SizedBox(height: 80),
-                PlaceholderView(
-                  icon: Icons.article_outlined,
-                  title: '아직 게시물이 없어요',
-                ),
-              ],
-            )
-          : ListView.separated(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(AppSizes.pagePadding),
-              itemCount: posts.length,
-              separatorBuilder: (context, index) =>
-                  const SizedBox(height: AppSizes.gapM),
-              itemBuilder: (context, index) {
-                final post = posts[index];
-                return PostTile(
-                  post: post,
-                  onTap: () => onOpen(post),
-                );
-              },
-            ),
+    // 게시물은 이미 다 받아왔으니 앱에서 바로 거른다 (칩 누를 때마다 요청하지 않도록)
+    final posts = _selectedType == null
+        ? widget.posts
+        : widget.posts.where((p) => p.type == _selectedType).toList();
+    final emptyTitle = _selectedType == null
+        ? '아직 게시물이 없어요'
+        : '${_types.firstWhere((t) => t.$1 == _selectedType).$2} 게시물이 없어요';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 64,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+            itemCount: _types.length,
+            separatorBuilder: (context, index) =>
+                const SizedBox(width: AppSizes.gapS),
+            itemBuilder: (context, index) {
+              final (type, label) = _types[index];
+              return CategoryChip(
+                label: label,
+                selected: _selectedType == type,
+                onTap: () => setState(() => _selectedType = type),
+              );
+            },
+          ),
+        ),
+        Expanded(
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: widget.onRefresh,
+            child: posts.isEmpty
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      const SizedBox(height: 80),
+                      PlaceholderView(
+                        icon: Icons.article_outlined,
+                        title: emptyTitle,
+                      ),
+                    ],
+                  )
+                : ListView.separated(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(AppSizes.pagePadding),
+                    itemCount: posts.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: AppSizes.gapM),
+                    itemBuilder: (context, index) {
+                      final post = posts[index];
+                      return PostTile(
+                        post: post,
+                        onTap: () => widget.onOpen(post),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
