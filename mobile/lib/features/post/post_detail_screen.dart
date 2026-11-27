@@ -83,7 +83,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   void _showSnack(String message) {
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// 등록 버튼: 새 댓글 작성 또는 수정 저장
@@ -171,10 +172,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final messenger = ScaffoldMessenger.of(context);
     try {
       await _repo.deletePost(widget.postId);
-      messenger.showSnackBar(const SnackBar(content: Text('게시물을 삭제했어요.')));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('게시물을 삭제했어요.')));
       navigator.pop(true);
     } on ApiException catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 

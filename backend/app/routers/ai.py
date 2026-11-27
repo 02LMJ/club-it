@@ -1,4 +1,6 @@
 """LLM 기반 콘텐츠 작성 보조: 제목추천 / 본문초안 / 문장개선 / 요약."""
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -46,5 +48,10 @@ def assist(req: AssistRequest, db: Session = Depends(get_db), user: User = Depen
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, str(e))
     suggestions: list[str] = []
     if req.task == "title":
-        suggestions = [s.strip(" -•*0123456789.)\"'") for s in text.splitlines() if s.strip()][:5]
+        # 앞에 붙은 번호·기호("1. ", "- ", "2) ")만 떼고, 제목 안·끝의 숫자와 괄호는 그대로 둠
+        suggestions = [
+            re.sub(r"^\s*(?:[-•*]|\d+[.)])\s*", "", s).strip().strip("\"'")
+            for s in text.splitlines()
+            if s.strip()
+        ][:5]
     return AssistResponse(task=req.task, result=text, suggestions=suggestions, provider=settings.LLM_PROVIDER)

@@ -7,6 +7,7 @@ import 'package:mobile/app.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/data/models/user.dart';
+import 'package:mobile/data/repositories/ai_repository.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
 import 'package:mobile/data/repositories/club_repository.dart';
 import 'package:mobile/data/repositories/membership_repository.dart';
@@ -64,6 +65,7 @@ Future<void> pumpApp(WidgetTester tester) async {
           create: (_) => NotificationProvider(MockNotificationRepository()),
         ),
         Provider<PostRepository>(create: (_) => MockPostRepository()),
+        Provider<AiRepository>(create: (_) => MockAiRepository()),
       ],
       child: const ClubItApp(),
     ),
@@ -399,5 +401,55 @@ void main() {
 
     expect(find.text('게시물을 삭제했어요.'), findsOneWidget);
     expect(find.byTooltip('게시물 메뉴'), findsNothing);
+  });
+
+  testWidgets('글쓰기 화면에서 AI로 제목을 추천받고 문장을 다듬을 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('글쓰기'));
+    await tester.pumpAndSettle();
+
+    // 본문 없이 제목 추천 → 안내
+    await tester.ensureVisible(find.text('제목 추천'));
+    await tester.tap(find.text('제목 추천'));
+    await tester.pumpAndSettle();
+    expect(find.text('본문을 먼저 입력해주세요.'), findsOneWidget);
+
+    // 본문 입력 → 제목 추천 → 후보를 누르면 제목에 들어감
+    await tester.enterText(find.byType(TextFormField).at(1), '신입 모집해요');
+    await tester.ensureVisible(find.text('제목 추천'));
+    await tester.tap(find.text('제목 추천'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('예시 응답 모드'), findsOneWidget);
+    await tester.tap(find.text('함께할 신입 부원을 모집합니다'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).at(0))
+          .controller!
+          .text,
+      '함께할 신입 부원을 모집합니다',
+    );
+
+    // 문장 다듬기 → 결과 확인 → 본문 교체
+    await tester.ensureVisible(find.text('문장 다듬기'));
+    await tester.tap(find.text('문장 다듬기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '이 글로 바꾸기'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).at(1))
+          .controller!
+          .text,
+      '[다듬은 글] 신입 모집해요',
+    );
   });
 }
