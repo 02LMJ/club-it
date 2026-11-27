@@ -42,6 +42,9 @@ const List<Club> mockClubs = [
     description: '정기 공연과 축제 무대를 준비하는 밴드 동아리입니다.',
     isRecruiting: true,
     memberCount: 27,
+    // 테스트 로그인 사용자(학생1)가 임원인 동아리 → 글쓰기·게시물 관리 확인용
+    myStatus: 'APPROVED',
+    myRole: 'OFFICER',
   ),
   Club(
     id: 6,
@@ -53,7 +56,7 @@ const List<Club> mockClubs = [
   ),
 ];
 
-/// 가짜 게시물 (CATS에만 2개)
+/// 가짜 게시물 (CATS 2개, 울림 1개)
 final List<Post> mockPosts = [
   Post(
     id: 1,
@@ -75,5 +78,15 @@ final List<Post> mockPosts = [
     title: '2026-2 신입 부원 모집',
     content: '프로그래밍에 관심 있는 누구나 지원 가능합니다.',
     createdAt: DateTime(2026, 10, 20, 12, 0),
+  ),
+  Post(
+    id: 3,
+    clubId: 5,
+    authorId: 1,
+    authorName: '학생1',
+    type: 'PROMO',
+    title: '울림 정기 공연 안내',
+    content: '12월 첫째 주 금요일 저녁, 학생회관 소극장에서 정기 공연을 합니다.',
+    createdAt: DateTime(2026, 11, 20, 15, 0),
   ),
 ];

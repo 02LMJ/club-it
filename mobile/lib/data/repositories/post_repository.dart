@@ -3,9 +3,28 @@ import '../mock/mock_clubs.dart';
 import '../models/comment.dart';
 import '../models/post.dart';
 
-/// 게시물 상세·댓글 관련 서버 요청
+/// 게시물 상세·작성·수정·삭제, 댓글 관련 서버 요청
 abstract class PostRepository {
   Future<Post> fetchPost(int postId);
+
+  /// 게시물 작성 (동아리 임원만)
+  Future<Post> createPost(
+    int clubId, {
+    required String type,
+    required String title,
+    required String content,
+  });
+
+  /// 게시물 수정 (작성자만)
+  Future<Post> updatePost(
+    int postId, {
+    required String type,
+    required String title,
+    required String content,
+  });
+
+  /// 게시물 삭제 (작성자 또는 동아리 임원)
+  Future<void> deletePost(int postId);
 
   Future<List<Comment>> fetchComments(int postId);
 
@@ -26,6 +45,44 @@ class ApiPostRepository implements PostRepository {
   Future<Post> fetchPost(int postId) async {
     final data = await _api.get('/posts/$postId');
     return Post.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// POST /clubs/{clubId}/posts
+  @override
+  Future<Post> createPost(
+    int clubId, {
+    required String type,
+    required String title,
+    required String content,
+  }) async {
+    final data = await _api.post('/clubs/$clubId/posts', body: {
+      'post_type': type,
+      'title': title,
+      'content': content,
+    });
+    return Post.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// PATCH /posts/{postId}
+  @override
+  Future<Post> updatePost(
+    int postId, {
+    required String type,
+    required String title,
+    required String content,
+  }) async {
+    final data = await _api.patch('/posts/$postId', body: {
+      'post_type': type,
+      'title': title,
+      'content': content,
+    });
+    return Post.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// DELETE /posts/{postId} (댓글도 함께 삭제됨)
+  @override
+  Future<void> deletePost(int postId) async {
+    await _api.delete('/posts/$postId');
   }
 
   @override
@@ -75,9 +132,63 @@ class MockPostRepository implements PostRepository {
   ];
   int _nextId = 100;
 
+  /// 가짜 게시물 (원본 mockPosts는 건드리지 않도록 복사해서 사용)
+  late final List<Post> _posts = List.of(mockPosts);
+
   @override
   Future<Post> fetchPost(int postId) async {
-    return mockPosts.firstWhere((p) => p.id == postId);
+    return _posts.firstWhere((p) => p.id == postId);
+  }
+
+  @override
+  Future<Post> createPost(
+    int clubId, {
+    required String type,
+    required String title,
+    required String content,
+  }) async {
+    final post = Post(
+      id: _nextId++,
+      clubId: clubId,
+      authorId: currentUserId,
+      authorName: currentUserName,
+      type: type,
+      title: title,
+      content: content,
+      createdAt: DateTime.now(),
+    );
+    _posts.add(post);
+    return post;
+  }
+
+  @override
+  Future<Post> updatePost(
+    int postId, {
+    required String type,
+    required String title,
+    required String content,
+  }) async {
+    final index = _posts.indexWhere((p) => p.id == postId);
+    final old = _posts[index];
+    final updated = Post(
+      id: old.id,
+      clubId: old.clubId,
+      authorId: old.authorId,
+      authorName: old.authorName,
+      type: type,
+      title: title,
+      content: content,
+      createdAt: old.createdAt,
+      commentCount: old.commentCount,
+    );
+    _posts[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<void> deletePost(int postId) async {
+    _posts.removeWhere((p) => p.id == postId);
+    _comments.removeWhere((c) => c.postId == postId);
   }
 
   @override

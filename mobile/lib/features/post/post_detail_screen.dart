@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/network/api_exception.dart';
+import '../../core/router/route_paths.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_sizes.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -17,6 +19,7 @@ import '../club/club_provider.dart';
 
 /// S06 게시물 상세
 /// 종류 뱃지·제목 / 작성자·날짜 / 본문 / 댓글 목록 / 하단 고정 댓글 입력창
+/// 오른쪽 위 ⋮: 작성자는 수정·삭제, 동아리 임원은 삭제
 class PostDetailScreen extends StatefulWidget {
   const PostDetailScreen({super.key, required this.postId});
 
@@ -148,13 +151,43 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
+  /// 게시물 수정 화면 → 저장하고 돌아오면 다시 불러옴
+  Future<void> _editPost() async {
+    final saved = await context.push<bool>(RoutePaths.postEdit(widget.postId));
+    if (saved == true && mounted) _load();
+  }
+
+  /// 게시물 삭제 → 이전 화면(게시판 등)으로 돌아감
+  Future<void> _deletePost() async {
+    final ok = await showConfirmDialog(
+      context,
+      title: '게시물 삭제',
+      message: '이 게시물과 댓글을 모두 삭제할까요?',
+      confirmLabel: '삭제',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    final navigator = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await _repo.deletePost(widget.postId);
+      messenger.showSnackBar(const SnackBar(content: Text('게시물을 삭제했어요.')));
+      navigator.pop(true);
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final post = _post;
-    final myId = context.watch<AuthProvider>().user?.id;
+    final me = context.watch<AuthProvider>().user;
+    final myId = me?.id;
     final isOfficer = post != null &&
-        (context.watch<ClubProvider>().findById(post.clubId)?.isOfficer ??
-            false);
+        ((me?.isAdmin ?? false) ||
+            (context.watch<ClubProvider>().findById(post.clubId)?.isOfficer ??
+                false));
+    final isAuthor = post != null && post.authorId == myId;
 
     if (post == null) {
       return Scaffold(
@@ -169,7 +202,27 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        actions: [
+          if (isAuthor || isOfficer)
+            PopupMenuButton<String>(
+              tooltip: '게시물 메뉴',
+              color: AppColors.surface,
+              onSelected: (value) =>
+                  value == 'edit' ? _editPost() : _deletePost(),
+              itemBuilder: (context) => [
+                // 서버 규칙: 수정은 작성자만, 삭제는 작성자 또는 임원
+                if (isAuthor)
+                  const PopupMenuItem(value: 'edit', child: Text('수정')),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('삭제', style: TextStyle(color: AppColors.error)),
+                ),
+              ],
+            ),
+          const SizedBox(width: 4),
+        ],
+      ),
       body: RefreshIndicator(
         color: AppColors.primary,
         onRefresh: _load,
