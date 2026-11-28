@@ -18,6 +18,10 @@ class RoutePaths {
   static String clubApply(int clubId) => '/clubs/$clubId/apply';
   static String postDetail(int postId) => '/posts/$postId';
   static String postNew(int clubId) => '/clubs/$clubId/posts/new';
+  static String clubApplications(int clubId) => '/clubs/$clubId/applications';
+  static String clubMembers(int clubId) => '/clubs/$clubId/members';
+  static String clubEdit(int clubId) => '/clubs/$clubId/edit';
+  static const clubNew = '/clubs/new';
   static String postEdit(int postId) => '/posts/$postId/edit';
 
   // 개발용

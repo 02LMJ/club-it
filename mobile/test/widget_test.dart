@@ -9,6 +9,7 @@ import 'package:mobile/core/storage/token_storage.dart';
 import 'package:mobile/data/models/user.dart';
 import 'package:mobile/data/repositories/ai_repository.dart';
 import 'package:mobile/data/repositories/auth_repository.dart';
+import 'package:mobile/data/repositories/club_admin_repository.dart';
 import 'package:mobile/data/repositories/club_repository.dart';
 import 'package:mobile/data/repositories/membership_repository.dart';
 import 'package:mobile/data/repositories/notification_repository.dart';
@@ -66,6 +67,9 @@ Future<void> pumpApp(WidgetTester tester) async {
         ),
         Provider<PostRepository>(create: (_) => MockPostRepository()),
         Provider<AiRepository>(create: (_) => MockAiRepository()),
+        Provider<ClubAdminRepository>(
+          create: (_) => MockClubAdminRepository(),
+        ),
       ],
       child: const ClubItApp(),
     ),
@@ -451,5 +455,145 @@ void main() {
           .text,
       '[다듬은 글] 신입 모집해요',
     );
+  });
+
+  testWidgets('임원은 가입 신청을 승인하고, 사유를 적어 거절할 수 있다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 학생1이 임원인 울림 → 하단 [가입 신청 관리]
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+    // 하단 버튼에 대기 중인 신청 수 표시
+    await tester.tap(find.text('가입 신청 관리 (2)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('대기 중인 신청 2'), findsOneWidget);
+    expect(find.text('기타를 3년 쳤고 공연 무대에 서 보고 싶어요!'), findsOneWidget);
+
+    // 학생2 승인
+    await tester.tap(find.widgetWithText(FilledButton, '승인').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '승인'));
+    await tester.pumpAndSettle();
+    expect(find.text('학생2님의 가입을 승인했어요.'), findsOneWidget);
+    expect(find.text('대기 중인 신청 1'), findsOneWidget);
+
+    // 학생3 거절: 사유 없이 누르면 안내 → 사유 입력 후 거절
+    await tester.tap(find.widgetWithText(OutlinedButton, '거절'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '거절하기'));
+    await tester.pumpAndSettle();
+    expect(find.text('거절 사유를 입력해주세요.'), findsOneWidget);
+
+    await tester.enterText(
+        find.widgetWithText(TextField, '거절 사유를 입력해주세요.'),
+        '이번 학기 모집 정원이 마감되었습니다.');
+    await tester.tap(find.widgetWithText(FilledButton, '거절하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('학생3님의 신청을 거절했어요.'), findsOneWidget);
+    expect(find.text('대기 중인 가입 신청이 없어요'), findsOneWidget);
+
+    // 상세로 돌아오면 숫자가 사라짐
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('가입 신청 관리'), findsOneWidget);
+  });
+
+  testWidgets('임원은 부원 목록을 볼 수 있고, 승인한 신청자가 부원에 추가된다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 임원이 아닌 CATS에는 부원 목록 버튼 없음
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('부원 목록'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+
+    // 부원 목록: 임원 먼저
+    await tester.tap(find.byTooltip('부원 목록'));
+    await tester.pumpAndSettle();
+    expect(find.text('부원 2명 · 임원 1명'), findsOneWidget);
+    expect(find.text('학생1'), findsOneWidget);
+    expect(find.text('김부원'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // 학생2 승인 후 다시 보면 3명
+    await tester.tap(find.text('가입 신청 관리 (2)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '승인').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '승인'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('부원 목록'));
+    await tester.pumpAndSettle();
+    expect(find.text('부원 3명 · 임원 1명'), findsOneWidget);
+    expect(find.text('학생2'), findsOneWidget);
+  });
+
+  testWidgets('임원은 동아리 정보를 수정할 수 있고, 삭제 버튼은 보이지 않는다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 일반 학생 계정에는 마이페이지 [동아리 등록] 없음
+    await tester.tap(find.text('마이'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 등록'), findsNothing);
+    await tester.tap(find.text('홈'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+
+    // 수정 화면: 기존 정보가 채워져 있음 → 모집 끄고 저장
+    await tester.tap(find.byTooltip('동아리 정보 수정'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 정보 수정'), findsOneWidget);
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).at(0))
+          .controller!
+          .text,
+      '울림',
+    );
+    await tester.ensureVisible(find.byType(SwitchListTile));
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('모집 기간이 아닙니다'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 정보를 수정했어요.'), findsOneWidget);
+
+    // 다시 수정 화면: 관리자가 아니면 삭제 버튼 없음
+    await tester.tap(find.byTooltip('동아리 정보 수정'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 삭제'), findsNothing);
   });
 }
