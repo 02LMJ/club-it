@@ -15,6 +15,7 @@ import '../../core/widgets/confirm_dialog.dart';
 import '../../core/widgets/placeholder_view.dart';
 import '../../data/models/club.dart';
 import '../../data/models/post.dart';
+import '../../data/repositories/club_admin_repository.dart';
 import '../auth/auth_provider.dart';
 import '../post/widgets/post_tile.dart';
 import 'club_provider.dart';
@@ -22,7 +23,7 @@ import 'favorite_action.dart';
 
 /// S04 동아리 상세
 /// 헤더(태그·이름·멤버 수) / [소개]·[게시판] 탭 / 가입 상태별 하단 버튼
-/// 이 동아리 임원(또는 관리자)에게는 [글쓰기] 버튼 표시
+/// 이 동아리 임원(또는 관리자)에게는 [글쓰기], 하단 [가입 신청 관리] 버튼 표시
 class ClubDetailScreen extends StatefulWidget {
   const ClubDetailScreen({super.key, required this.clubId});
 
@@ -38,6 +39,9 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   bool _isLoading = true;
   bool _isCancelling = false;
   String? _errorMessage;
+
+  /// 임원일 때만: 대기 중인 가입 신청 수 (하단 버튼에 표시)
+  int _pendingCount = 0;
 
   @override
   void initState() {
@@ -59,16 +63,31 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
         provider.fetchPosts(widget.clubId),
       ]);
       if (!mounted) return;
+      final club = results[0] as Club;
       setState(() {
-        _club = results[0] as Club;
+        _club = club;
         _posts = results[1] as List<Post>;
       });
+      final isAdmin = context.read<AuthProvider>().user?.isAdmin ?? false;
+      if (club.isOfficer || isAdmin) _loadPendingCount();
     } on ApiException catch (e) {
       if (mounted) setState(() => _errorMessage = e.message);
     } catch (_) {
       if (mounted) setState(() => _errorMessage = '동아리 정보를 불러오지 못했어요.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  /// 대기 중인 가입 신청 수 (실패해도 화면에는 영향 없이 0으로 둠)
+  Future<void> _loadPendingCount() async {
+    try {
+      final items = await context
+          .read<ClubAdminRepository>()
+          .fetchApplications(widget.clubId);
+      if (mounted) setState(() => _pendingCount = items.length);
+    } catch (_) {
+      if (mounted) setState(() => _pendingCount = 0);
     }
   }
 
@@ -88,6 +107,12 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
   Future<void> _openWrite(Club club) async {
     final saved = await context.push<bool>(RoutePaths.postNew(club.id));
     if (saved == true && mounted) _load();
+  }
+
+  /// 임원: 가입 신청 관리 → 돌아오면 멤버 수 등 새로고침
+  Future<void> _openApplications(Club club) async {
+    await context.push(RoutePaths.clubApplications(club.id));
+    if (mounted) _load();
   }
 
   Future<void> _cancelJoin(Club club) async {
@@ -201,6 +226,9 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
             : null,
         bottomNavigationBar: _BottomAction(
           club: club,
+          isManager: club.isOfficer || isAdmin,
+          pendingCount: _pendingCount,
+          onManage: () => _openApplications(club),
           onApply: () => _openApply(club),
           onCancel: () => _cancelJoin(club),
           isBusy: _isCancelling,
@@ -416,12 +444,22 @@ class _PostsTabState extends State<_PostsTab> {
 class _BottomAction extends StatelessWidget {
   const _BottomAction({
     required this.club,
+    required this.isManager,
+    required this.pendingCount,
+    required this.onManage,
     required this.onApply,
     required this.onCancel,
     required this.isBusy,
   });
 
   final Club club;
+
+  /// 이 동아리 임원(또는 관리자)이면 [가입 신청 관리] 버튼
+  final bool isManager;
+
+  /// 대기 중인 가입 신청 수 (0이면 숫자 숨김)
+  final int pendingCount;
+  final VoidCallback onManage;
   final VoidCallback onApply;
   final VoidCallback onCancel;
   final bool isBusy;
@@ -429,7 +467,14 @@ class _BottomAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Widget content;
-    if (club.myStatus == 'PENDING') {
+    if (isManager) {
+      content = AppButton(
+        label: pendingCount > 0 ? '가입 신청 관리 ($pendingCount)' : '가입 신청 관리',
+        icon: Icons.how_to_reg_outlined,
+        variant: AppButtonVariant.outlined,
+        onPressed: onManage,
+      );
+    } else if (club.myStatus == 'PENDING') {
       content = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
