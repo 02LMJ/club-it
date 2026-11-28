@@ -552,4 +552,48 @@ void main() {
     expect(find.text('부원 3명 · 임원 1명'), findsOneWidget);
     expect(find.text('학생2'), findsOneWidget);
   });
+
+  testWidgets('임원은 동아리 정보를 수정할 수 있고, 삭제 버튼은 보이지 않는다', (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 일반 학생 계정에는 마이페이지 [동아리 등록] 없음
+    await tester.tap(find.text('마이'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 등록'), findsNothing);
+    await tester.tap(find.text('홈'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+
+    // 수정 화면: 기존 정보가 채워져 있음 → 모집 끄고 저장
+    await tester.tap(find.byTooltip('동아리 정보 수정'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 정보 수정'), findsOneWidget);
+    expect(
+      tester.widget<TextFormField>(find.byType(TextFormField).at(0))
+          .controller!
+          .text,
+      '울림',
+    );
+    await tester.ensureVisible(find.byType(SwitchListTile));
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('모집 기간이 아닙니다'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '저장'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 정보를 수정했어요.'), findsOneWidget);
+
+    // 다시 수정 화면: 관리자가 아니면 삭제 버튼 없음
+    await tester.tap(find.byTooltip('동아리 정보 수정'));
+    await tester.pumpAndSettle();
+    expect(find.text('동아리 삭제'), findsNothing);
+  });
 }

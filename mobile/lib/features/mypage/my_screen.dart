@@ -80,6 +80,15 @@ class MyScreen extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
+                  // 동아리 등록 권한(OFFICER)이 있는 사용자·관리자만
+                  if (user?.canCreateClub ?? false) ...[
+                    ListTile(
+                      leading: const Icon(Icons.add_business_outlined),
+                      title: const Text('동아리 등록'),
+                      onTap: () => context.push(RoutePaths.clubNew),
+                    ),
+                    const Divider(height: 1),
+                  ],
                   ListTile(
                     leading: const Icon(Icons.palette_outlined),
                     title: const Text('디자인 미리보기 (개발용)'),

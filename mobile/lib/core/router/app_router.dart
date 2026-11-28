@@ -8,6 +8,7 @@ import '../../features/club/club_apply_screen.dart';
 import '../../features/club/club_detail_screen.dart';
 import '../../features/club/club_list_screen.dart';
 import '../../features/club_admin/applications_screen.dart';
+import '../../features/club_admin/club_form_screen.dart';
 import '../../features/club_admin/members_screen.dart';
 import '../../features/dev/design_preview_screen.dart';
 import '../../features/favorite/favorite_screen.dart';
@@ -26,6 +27,7 @@ import 'route_paths.dart';
 /// /clubs/:id/posts/new       게시물 작성, /posts/:id/edit 게시물 수정
 /// /clubs/:id/applications    가입 신청 관리 (임원)
 /// /clubs/:id/members         부원 목록 (임원)
+/// /clubs/new, /clubs/:id/edit 동아리 등록 / 정보 수정·삭제
 GoRouter createRouter(AuthProvider auth) {
   return GoRouter(
     initialLocation: RoutePaths.home,
@@ -90,6 +92,11 @@ GoRouter createRouter(AuthProvider auth) {
       ),
 
       // 상세 화면
+      // 동아리 등록 (OFFICER 권한) — '/clubs/:clubId'보다 먼저 있어야 'new'가 번호로 읽히지 않음
+      GoRoute(
+        path: RoutePaths.clubNew,
+        builder: (context, state) => const ClubFormScreen(),
+      ),
       GoRoute(
         path: '/clubs/:clubId',
         builder: (context, state) =>
@@ -117,6 +124,12 @@ GoRouter createRouter(AuthProvider auth) {
             path: 'members',
             builder: (context, state) =>
                 MembersScreen(clubId: _idParam(state, 'clubId')),
+          ),
+          // 임원: 동아리 정보 수정·삭제
+          GoRoute(
+            path: 'edit',
+            builder: (context, state) =>
+                ClubFormScreen(clubId: _idParam(state, 'clubId')),
           ),
         ],
       ),

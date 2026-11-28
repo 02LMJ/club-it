@@ -16,6 +16,9 @@ class User {
 
   bool get isAdmin => role == 'ADMIN';
 
+  /// 새 동아리를 등록할 수 있는지 (관리자가 OFFICER 권한을 준 사용자, 또는 관리자)
+  bool get canCreateClub => role == 'OFFICER' || role == 'ADMIN';
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['user_id'] as int,

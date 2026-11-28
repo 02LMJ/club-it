@@ -1,7 +1,8 @@
 import '../../core/network/api_client.dart';
+import '../models/club.dart';
 import '../models/club_application.dart';
 
-/// 동아리 임원 전용: 가입 신청 관리, 부원 목록
+/// 동아리 임원 전용: 가입 신청 관리, 부원 목록, 동아리 등록·수정·삭제
 abstract class ClubAdminRepository {
   /// 대기 중인 가입 신청 목록 (먼저 신청한 순)
   Future<List<ClubApplication>> fetchApplications(int clubId);
@@ -16,7 +17,40 @@ abstract class ClubAdminRepository {
 
   /// 승인된 부원 목록 (임원 먼저, 이름순)
   Future<List<ClubApplication>> fetchMembers(int clubId);
+
+  /// 동아리 등록 (OFFICER 권한 사용자·관리자). 등록한 사람은 자동으로 그 동아리 임원
+  Future<Club> createClub({
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  });
+
+  /// 동아리 정보·모집 여부 수정 (그 동아리 임원·관리자)
+  Future<Club> updateClub(
+    int clubId, {
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  });
+
+  /// 동아리 삭제 (목록에서 숨김 처리)
+  Future<void> deleteClub(int clubId);
 }
+
+Map<String, dynamic> _clubBody(
+  String name,
+  String category,
+  String description,
+  bool isRecruiting,
+) =>
+    {
+      'club_name': name,
+      'category': category,
+      'description': description,
+      'recruit_status': isRecruiting,
+    };
 
 /// 실제 서버(FastAPI)와 통신하는 구현
 class ApiClubAdminRepository implements ClubAdminRepository {
@@ -57,6 +91,39 @@ class ApiClubAdminRepository implements ClubAdminRepository {
     return (data as List)
         .map((e) => ClubApplication.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// POST /clubs
+  @override
+  Future<Club> createClub({
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  }) async {
+    final data = await _api.post('/clubs',
+        body: _clubBody(name, category, description, isRecruiting));
+    return Club.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// PATCH /clubs/{clubId}
+  @override
+  Future<Club> updateClub(
+    int clubId, {
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  }) async {
+    final data = await _api.patch('/clubs/$clubId',
+        body: _clubBody(name, category, description, isRecruiting));
+    return Club.fromJson(data as Map<String, dynamic>);
+  }
+
+  /// DELETE /clubs/{clubId}
+  @override
+  Future<void> deleteClub(int clubId) async {
+    await _api.delete('/clubs/$clubId');
   }
 }
 
@@ -132,6 +199,48 @@ class MockClubAdminRepository implements ClubAdminRepository {
       joinDate: DateTime(2026, 3, 10, 18, 0),
     ),
   ];
+
+  @override
+  Future<Club> createClub({
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  }) async {
+    return Club(
+      id: 100,
+      name: name,
+      category: category,
+      description: description,
+      isRecruiting: isRecruiting,
+      memberCount: 1,
+      myStatus: 'APPROVED',
+      myRole: 'OFFICER',
+    );
+  }
+
+  @override
+  Future<Club> updateClub(
+    int clubId, {
+    required String name,
+    required String category,
+    required String description,
+    required bool isRecruiting,
+  }) async {
+    return Club(
+      id: clubId,
+      name: name,
+      category: category,
+      description: description,
+      isRecruiting: isRecruiting,
+      memberCount: _members.length,
+      myStatus: 'APPROVED',
+      myRole: 'OFFICER',
+    );
+  }
+
+  @override
+  Future<void> deleteClub(int clubId) async {}
 
   @override
   Future<List<ClubApplication>> fetchMembers(int clubId) async {
