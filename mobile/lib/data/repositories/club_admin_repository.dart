@@ -1,7 +1,7 @@
 import '../../core/network/api_client.dart';
 import '../models/club_application.dart';
 
-/// 동아리 임원 전용: 가입 신청 관리
+/// 동아리 임원 전용: 가입 신청 관리, 부원 목록
 abstract class ClubAdminRepository {
   /// 대기 중인 가입 신청 목록 (먼저 신청한 순)
   Future<List<ClubApplication>> fetchApplications(int clubId);
@@ -13,6 +13,9 @@ abstract class ClubAdminRepository {
     required bool approve,
     String? rejectReason,
   });
+
+  /// 승인된 부원 목록 (임원 먼저, 이름순)
+  Future<List<ClubApplication>> fetchMembers(int clubId);
 }
 
 /// 실제 서버(FastAPI)와 통신하는 구현
@@ -45,6 +48,15 @@ class ApiClubAdminRepository implements ClubAdminRepository {
       'status': approve ? 'APPROVED' : 'REJECTED',
       if (!approve) 'reject_reason': rejectReason,
     });
+  }
+
+  /// GET /clubs/{clubId}/members
+  @override
+  Future<List<ClubApplication>> fetchMembers(int clubId) async {
+    final data = await _api.get('/clubs/$clubId/members');
+    return (data as List)
+        .map((e) => ClubApplication.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
 
@@ -83,6 +95,51 @@ class MockClubAdminRepository implements ClubAdminRepository {
     required bool approve,
     String? rejectReason,
   }) async {
-    _pending.removeWhere((a) => a.id == membershipId);
+    final i = _pending.indexWhere((a) => a.id == membershipId);
+    if (i < 0) return;
+    final a = _pending.removeAt(i);
+    if (approve) {
+      _members.add(ClubApplication(
+        id: a.id,
+        userId: a.userId,
+        userName: a.userName,
+        userEmail: a.userEmail,
+        status: 'APPROVED',
+        role: 'MEMBER',
+        joinDate: a.joinDate,
+        message: a.message,
+      ));
+    }
+  }
+
+  final List<ClubApplication> _members = [
+    ClubApplication(
+      id: 1,
+      userId: 1,
+      userName: '학생1',
+      userEmail: 'student1@cbnu.ac.kr',
+      status: 'APPROVED',
+      role: 'OFFICER',
+      joinDate: DateTime(2026, 3, 2, 10, 0),
+    ),
+    ClubApplication(
+      id: 5,
+      userId: 6,
+      userName: '김부원',
+      userEmail: 'member1@cbnu.ac.kr',
+      status: 'APPROVED',
+      role: 'MEMBER',
+      joinDate: DateTime(2026, 3, 10, 18, 0),
+    ),
+  ];
+
+  @override
+  Future<List<ClubApplication>> fetchMembers(int clubId) async {
+    final list = List.of(_members)
+      ..sort((a, b) {
+        if (a.role != b.role) return a.role == 'OFFICER' ? -1 : 1;
+        return a.userName.compareTo(b.userName);
+      });
+    return list;
   }
 }

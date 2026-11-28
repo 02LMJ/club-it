@@ -8,6 +8,7 @@ import '../../features/club/club_apply_screen.dart';
 import '../../features/club/club_detail_screen.dart';
 import '../../features/club/club_list_screen.dart';
 import '../../features/club_admin/applications_screen.dart';
+import '../../features/club_admin/members_screen.dart';
 import '../../features/dev/design_preview_screen.dart';
 import '../../features/favorite/favorite_screen.dart';
 import '../../features/mypage/my_screen.dart';
@@ -24,6 +25,7 @@ import 'route_paths.dart';
 /// /clubs/:id, /posts/:id     상세 화면 (하단 탭 없이 전체 화면)
 /// /clubs/:id/posts/new       게시물 작성, /posts/:id/edit 게시물 수정
 /// /clubs/:id/applications    가입 신청 관리 (임원)
+/// /clubs/:id/members         부원 목록 (임원)
 GoRouter createRouter(AuthProvider auth) {
   return GoRouter(
     initialLocation: RoutePaths.home,
@@ -109,6 +111,12 @@ GoRouter createRouter(AuthProvider auth) {
             path: 'applications',
             builder: (context, state) =>
                 ApplicationsScreen(clubId: _idParam(state, 'clubId')),
+          ),
+          // 임원: 부원 목록
+          GoRoute(
+            path: 'members',
+            builder: (context, state) =>
+                MembersScreen(clubId: _idParam(state, 'clubId')),
           ),
         ],
       ),

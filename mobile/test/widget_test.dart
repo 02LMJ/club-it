@@ -506,4 +506,50 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('가입 신청 관리'), findsOneWidget);
   });
+
+  testWidgets('임원은 부원 목록을 볼 수 있고, 승인한 신청자가 부원에 추가된다',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.enterText(loginField(0), FakeAuthRepository.validEmail);
+    await tester.enterText(
+        loginField(1), FakeAuthRepository.validPassword);
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pumpAndSettle();
+
+    // 임원이 아닌 CATS에는 부원 목록 버튼 없음
+    await tester.tap(find.text('CATS'));
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('부원 목록'), findsNothing);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '울림');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(Card, '울림'));
+    await tester.pumpAndSettle();
+
+    // 부원 목록: 임원 먼저
+    await tester.tap(find.byTooltip('부원 목록'));
+    await tester.pumpAndSettle();
+    expect(find.text('부원 2명 · 임원 1명'), findsOneWidget);
+    expect(find.text('학생1'), findsOneWidget);
+    expect(find.text('김부원'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    // 학생2 승인 후 다시 보면 3명
+    await tester.tap(find.text('가입 신청 관리 (2)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '승인').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, '승인'));
+    await tester.pumpAndSettle();
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('부원 목록'));
+    await tester.pumpAndSettle();
+    expect(find.text('부원 3명 · 임원 1명'), findsOneWidget);
+    expect(find.text('학생2'), findsOneWidget);
+  });
 }

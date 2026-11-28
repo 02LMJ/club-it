@@ -27,3 +27,13 @@ String formatDateTime(DateTime date, {DateTime? now}) {
   if (date.year == today.year) return '$day $time';
   return '${date.year}.$day $time';
 }
+
+/// 날짜만 (오늘이어도 날짜로)
+/// - 올해: 11.28
+/// - 그 외: 2025.12.03
+String formatDate(DateTime date, {DateTime? now}) {
+  final today = now ?? DateTime.now();
+  String two(int n) => n.toString().padLeft(2, '0');
+  if (date.year == today.year) return '${two(date.month)}.${two(date.day)}';
+  return '${date.year}.${two(date.month)}.${two(date.day)}';
+}

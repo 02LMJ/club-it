@@ -23,7 +23,7 @@ import 'favorite_action.dart';
 
 /// S04 동아리 상세
 /// 헤더(태그·이름·멤버 수) / [소개]·[게시판] 탭 / 가입 상태별 하단 버튼
-/// 이 동아리 임원(또는 관리자)에게는 [글쓰기], 하단 [가입 신청 관리] 버튼 표시
+/// 이 동아리 임원(또는 관리자)에게는 [글쓰기], 하단 [가입 신청 관리], 상단 [부원 목록] 버튼 표시
 class ClubDetailScreen extends StatefulWidget {
   const ClubDetailScreen({super.key, required this.clubId});
 
@@ -165,6 +165,12 @@ class _ClubDetailScreenState extends State<ClubDetailScreen> {
       child: Scaffold(
         appBar: AppBar(
           actions: [
+            if (club.isOfficer || isAdmin)
+              IconButton(
+                tooltip: '부원 목록',
+                onPressed: () => context.push(RoutePaths.clubMembers(club.id)),
+                icon: const Icon(Icons.groups_outlined, size: 26),
+              ),
             IconButton(
               tooltip: isFavorite ? '즐겨찾기 해제' : '즐겨찾기',
               onPressed: () => toggleFavoriteWithFeedback(context, club.id),
